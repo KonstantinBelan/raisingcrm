@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { telegramWebApp } from '@/lib/telegram';
-import { Briefcase, CheckSquare, Users, CreditCard, Bell, TrendingUp, Plus } from 'lucide-react';
+import { Briefcase, CheckSquare, Users, CreditCard, Bell, TrendingUp, Plus, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Dashboard() {
@@ -126,10 +126,54 @@ export default function Dashboard() {
               Новый клиент
             </Button>
           </Link>
-          <Button className="w-full justify-start" variant="outline">
-            <CreditCard className="mr-2 h-4 w-4" />
-            Записать платеж
-          </Button>
+          <Link href="/payments/new">
+            <Button className="w-full justify-start" variant="outline">
+              <Plus className="w-4 h-4 mr-2" />
+              Добавить платеж
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      {/* Navigation */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Модули</CardTitle>
+          <CardDescription>
+            Переходите к основным разделам системы
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-3">
+          <Link href="/projects">
+            <Button className="w-full justify-start" variant="outline">
+              <Briefcase className="w-4 h-4 mr-2" />
+              Проекты
+            </Button>
+          </Link>
+          <Link href="/tasks">
+            <Button className="w-full justify-start" variant="outline">
+              <CheckSquare className="w-4 h-4 mr-2" />
+              Задачи
+            </Button>
+          </Link>
+          <Link href="/clients">
+            <Button className="w-full justify-start" variant="outline">
+              <Users className="w-4 h-4 mr-2" />
+              Клиенты
+            </Button>
+          </Link>
+          <Link href="/payments">
+            <Button className="w-full justify-start" variant="outline">
+              <CreditCard className="w-4 h-4 mr-2" />
+              Платежи
+            </Button>
+          </Link>
+          <Link href="/analytics">
+            <Button className="w-full justify-start col-span-2" variant="outline">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Финансовая аналитика
+            </Button>
+          </Link>
         </CardContent>
       </Card>
 
