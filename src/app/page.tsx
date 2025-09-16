@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { telegramWebApp } from '@/lib/telegram';
-import { Briefcase, CheckSquare, Users, CreditCard, Bell, TrendingUp } from 'lucide-react';
+import { Briefcase, CheckSquare, Users, CreditCard, Bell, TrendingUp, Plus } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Dashboard() {
   const [user, setUser] = useState<{firstName?: string; lastName?: string; username?: string} | null>(null);
@@ -107,18 +108,24 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button className="w-full justify-start" variant="outline">
-            <Briefcase className="mr-2 h-4 w-4" />
-            Создать проект
-          </Button>
-          <Button className="w-full justify-start" variant="outline">
-            <CheckSquare className="mr-2 h-4 w-4" />
-            Добавить задачу
-          </Button>
-          <Button className="w-full justify-start" variant="outline">
-            <Users className="mr-2 h-4 w-4" />
-            Добавить клиента
-          </Button>
+          <Link href="/projects/new">
+            <Button className="w-full justify-start" variant="outline">
+              <Plus className="w-4 h-4 mr-2" />
+              Создать новый проект
+            </Button>
+          </Link>
+          <Link href="/tasks/new">
+            <Button className="w-full justify-start" variant="outline">
+              <Plus className="w-4 h-4 mr-2" />
+              Добавить задачу
+            </Button>
+          </Link>
+          <Link href="/clients/new">
+            <Button className="w-full justify-start" variant="outline">
+              <Plus className="w-4 h-4 mr-2" />
+              Новый клиент
+            </Button>
+          </Link>
           <Button className="w-full justify-start" variant="outline">
             <CreditCard className="mr-2 h-4 w-4" />
             Записать платеж
