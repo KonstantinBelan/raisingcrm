@@ -1,22 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { auth } from '@/lib/auth';
+import { PrismaClient } from '@prisma/client';
+import { getUser } from '@/lib/auth';
+
+const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth(request);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search');
+
+    const whereClause: any = {
+      userId: user.id,
+    };
+
+    if (search) {
+      whereClause.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { company: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
     const clients = await prisma.client.findMany({
-      where: {
-        userId: session.userId,
-      },
+      where: whereClause,
       include: {
+        projects: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            budget: true,
+            createdAt: true,
+          },
+        },
         _count: {
           select: {
             projects: true,
@@ -24,18 +45,15 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: {
-        name: 'asc',
+        createdAt: 'desc',
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      clients,
-    });
+    return NextResponse.json({ clients });
   } catch (error) {
     console.error('Error fetching clients:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -43,44 +61,78 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth(request);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
     const { name, email, phone, company, notes } = body;
 
-    // Validate required fields
-    if (!name) {
+    // Validation
+    if (!name || name.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Name is required' },
+        { error: 'Имя клиента обязательно для заполнения' },
         { status: 400 }
       );
     }
 
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { error: 'Некорректный формат email' },
+        { status: 400 }
+      );
+    }
+
+    // Check if client with same email already exists
+    if (email) {
+      const existingClient = await prisma.client.findFirst({
+        where: {
+          userId: user.id,
+          email: email,
+        },
+      });
+
+      if (existingClient) {
+        return NextResponse.json(
+          { error: 'Клиент с таким email уже существует' },
+          { status: 400 }
+        );
+      }
+    }
+
     const client = await prisma.client.create({
       data: {
-        name,
-        email: email || null,
-        phone: phone || null,
-        company: company || null,
-        notes: notes || null,
-        userId: session.userId,
+        name: name.trim(),
+        email: email?.trim() || null,
+        phone: phone?.trim() || null,
+        company: company?.trim() || null,
+        notes: notes?.trim() || null,
+        userId: user.id,
+      },
+      include: {
+        projects: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            budget: true,
+            createdAt: true,
+          },
+        },
+        _count: {
+          select: {
+            projects: true,
+          },
+        },
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      client,
-    });
+    return NextResponse.json({ client }, { status: 201 });
   } catch (error) {
     console.error('Error creating client:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
