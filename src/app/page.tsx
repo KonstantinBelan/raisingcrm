@@ -7,7 +7,7 @@ import { telegramWebApp } from '@/lib/telegram';
 import { Briefcase, CheckSquare, Users, CreditCard, Bell, TrendingUp } from 'lucide-react';
 
 export default function Dashboard() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{firstName?: string; lastName?: string; username?: string} | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -135,21 +135,21 @@ export default function Dashboard() {
           <div className="flex items-center space-x-3">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
             <div className="flex-1">
-              <p className="text-sm">Задача "Дизайн логотипа" выполнена</p>
+              <p className="text-sm">Задача &quot;Дизайн логотипа&quot; выполнена</p>
               <p className="text-xs text-muted-foreground">2 часа назад</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
             <div className="flex-1">
-              <p className="text-sm">Получен платеж от ООО "Технологии"</p>
+              <p className="text-sm">Получен платеж от ООО &quot;Технологии&quot;</p>
               <p className="text-xs text-muted-foreground">5 часов назад</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
             <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
             <div className="flex-1">
-              <p className="text-sm">Создан новый проект "Мобильное приложение"</p>
+              <p className="text-sm">Создан новый проект &quot;Мобильное приложение&quot;</p>
               <p className="text-xs text-muted-foreground">1 день назад</p>
             </div>
           </div>

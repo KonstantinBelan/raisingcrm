@@ -82,10 +82,7 @@ export async function POST(request: NextRequest) {
           telegramId: user.telegramId,
           username: user.username,
           firstName: user.firstName,
-          lastName: user.lastName,
-          isPremium: user.isPremium,
         },
-        sessionToken,
       },
     });
   } catch (error) {

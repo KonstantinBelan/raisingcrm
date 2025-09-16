@@ -157,7 +157,7 @@ export class TelegramWebAppService {
 }
 
 // Validate Telegram WebApp data on the server side
-export function validateTelegramWebAppData(initData: string, botToken: string): boolean {
+export async function validateTelegramWebAppData(initData: string, botToken: string): Promise<boolean> {
   try {
     const urlParams = new URLSearchParams(initData);
     const hash = urlParams.get('hash');
@@ -173,7 +173,7 @@ export function validateTelegramWebAppData(initData: string, botToken: string): 
       .join('\n');
 
     // Create secret key
-    const crypto = require('crypto');
+    const crypto = await import('crypto');
     const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
     
     // Calculate hash

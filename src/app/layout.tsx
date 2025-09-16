@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="ru" className="dark">
       <head>
-        <script src="https://telegram.org/js/telegram-web-app.js"></script>
+        <script src="https://telegram.org/js/telegram-web-app.js" async></script>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
       </head>
       <body className={`${inter.variable} font-sans antialiased bg-background text-foreground`}>
