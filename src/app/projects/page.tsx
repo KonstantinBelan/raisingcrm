@@ -17,10 +17,11 @@ const statusColors = {
   CANCELLED: 'bg-red-100 text-red-800',
 };
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   PLANNING: 'Планирование',
   ACTIVE: 'Активный',
   ON_HOLD: 'Приостановлен',
+  PAUSED: 'Приостановлен',
   COMPLETED: 'Завершен',
   CANCELLED: 'Отменен',
 };
@@ -60,11 +61,10 @@ export default function ProjectsPage() {
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
       currency: 'RUB',
-      minimumFractionDigits: 0,
     }).format(amount);
   };
 
-  const formatDate = (date: string) => {
+  const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('ru-RU');
   };
 
@@ -147,8 +147,8 @@ export default function ProjectsPage() {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-lg line-clamp-2">{project.title}</CardTitle>
-                    <Badge className={statusColors[project.status]}>
-                      {statusLabels[project.status]}
+                    <Badge variant={project.status === 'COMPLETED' ? 'default' : 'secondary'}>
+                      {statusLabels[project.status] || project.status}
                     </Badge>
                   </div>
                   {project.description && (
@@ -169,6 +169,11 @@ export default function ProjectsPage() {
                       <Calendar className="w-4 h-4 mr-2" />
                       Дедлайн: {formatDate(project.endDate)}
                     </div>
+                  )}
+                  {project.endDate && (
+                    <p className="text-sm text-muted-foreground">
+                      Завершен: {new Date(project.endDate).toLocaleDateString()}
+                    </p>
                   )}
                   {project.client && (
                     <div className="text-sm text-muted-foreground">

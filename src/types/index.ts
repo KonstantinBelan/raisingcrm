@@ -12,7 +12,9 @@ export interface User {
 }
 
 export enum ProjectStatus {
+  PLANNING = 'PLANNING',
   ACTIVE = 'ACTIVE',
+  ON_HOLD = 'ON_HOLD',
   PAUSED = 'PAUSED',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED'
@@ -47,6 +49,7 @@ export interface Project {
   budget?: number;
   currency: string;
   deadline?: Date;
+  endDate?: Date;
   priority: Priority;
   createdAt: Date;
   updatedAt: Date;
@@ -66,6 +69,7 @@ export interface Task {
   estimatedHours?: number;
   actualHours?: number;
   deadline?: Date;
+  dueDate?: Date;
   createdAt: Date;
   updatedAt: Date;
   userId: string;
@@ -74,6 +78,7 @@ export interface Task {
   parentTaskId?: string;
   parentTask?: Task;
   subtasks?: Task[];
+  tasks?: Task[];
 }
 
 export interface Client {
