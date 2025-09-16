@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth(request);
@@ -15,9 +15,11 @@ export async function GET(
       );
     }
 
+    const { id } = await params;
+
     const project = await prisma.project.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.userId,
       },
       include: {
@@ -26,7 +28,7 @@ export async function GET(
           include: {
             _count: {
               select: {
-                tasks: true, // subtasks count
+                subtasks: true, // subtasks count
               },
             },
           },
@@ -70,7 +72,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth(request);
@@ -81,13 +83,14 @@ export async function PUT(
       );
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { title, description, status, budget, startDate, endDate, clientId } = body;
 
     // Check if project exists and belongs to user
     const existingProject = await prisma.project.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.userId,
       },
     });
@@ -118,7 +121,7 @@ export async function PUT(
 
     const project = await prisma.project.update({
       where: {
-        id: params.id,
+        id,
       },
       data: {
         title: title || existingProject.title,
@@ -151,7 +154,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth(request);
@@ -162,10 +165,12 @@ export async function DELETE(
       );
     }
 
+    const { id } = await params;
+
     // Check if project exists and belongs to user
     const existingProject = await prisma.project.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.userId,
       },
     });
@@ -179,7 +184,7 @@ export async function DELETE(
 
     await prisma.project.delete({
       where: {
-        id: params.id,
+        id,
       },
     });
 

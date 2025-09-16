@@ -25,10 +25,11 @@ const priorityOptions = [
   { value: 'URGENT', label: 'Срочный' },
 ];
 
-export default function EditTaskPage({ params }: { params: { id: string } }) {
+export default function EditTaskPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [taskId, setTaskId] = useState<string>('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [formData, setFormData] = useState({
@@ -44,12 +45,19 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
   });
 
   useEffect(() => {
-    Promise.all([fetchTask(), fetchProjects(), fetchTasks()]);
-  }, [params.id]);
+    const initializeTask = async () => {
+      const { id } = await params;
+      setTaskId(id);
+      fetchTask(id);
+      fetchProjects();
+      fetchTasks();
+    };
+    initializeTask();
+  }, [params]);
 
-  const fetchTask = async () => {
+  const fetchTask = async (id: string) => {
     try {
-      const response = await fetch(`/api/tasks/${params.id}`);
+      const response = await fetch(`/api/tasks/${id}`);
       if (response.ok) {
         const data = await response.json();
         const task: Task = data.task;
@@ -104,7 +112,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/tasks/${params.id}`, {
+      const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -113,7 +121,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
       });
 
       if (response.ok) {
-        router.push(`/tasks/${params.id}`);
+        router.push(`/tasks/${taskId}`);
       } else {
         const error = await response.json();
         alert(error.error || 'Ошибка при обновлении задачи');
@@ -135,7 +143,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
   };
 
   const availableTasks = tasks.filter(task => 
-    task.id !== params.id && 
+    task.id !== taskId && 
     task.id !== formData.parentTaskId && 
     (!formData.projectId || task.projectId === formData.projectId)
   );
@@ -153,7 +161,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
   return (
     <div className="container mx-auto p-6 max-w-2xl">
       <div className="flex items-center gap-4 mb-6">
-        <Link href={`/tasks/${params.id}`}>
+        <Link href={`/tasks/${taskId}`}>
           <Button variant="ghost" size="sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Назад к задаче
@@ -316,7 +324,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                 )}
                 Сохранить изменения
               </Button>
-              <Link href={`/tasks/${params.id}`}>
+              <Link href={`/tasks/${taskId}`}>
                 <Button type="button" variant="outline">
                   Отмена
                 </Button>

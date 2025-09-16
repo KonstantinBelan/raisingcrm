@@ -25,30 +25,37 @@ const paymentStatuses = [
   { value: 'CANCELLED', label: 'Отменено' },
 ];
 
-export default function EditPaymentPage({ params }: { params: { id: string } }) {
+export default function EditPaymentPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [payment, setPayment] = useState<Payment | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [paymentId, setPaymentId] = useState<string>('');
+  const [payment, setPayment] = useState<Payment | null>(null);
   const [formData, setFormData] = useState({
     amount: '',
     currency: 'RUB',
     description: '',
     dueDate: '',
-    paidDate: '',
     status: 'PENDING' as PaymentStatus,
+    paidDate: '',
     projectId: '',
   });
 
   useEffect(() => {
-    fetchPayment();
-    fetchProjects();
-  }, [params.id]);
+    const initializePayment = async () => {
+      const { id } = await params;
+      setPaymentId(id);
+      fetchPayment(id);
+      fetchProjects();
+    };
+    initializePayment();
+  }, [params]);
 
-  const fetchPayment = async () => {
+  const fetchPayment = async (id: string) => {
     try {
-      const response = await fetch(`/api/payments/${params.id}`);
+      const response = await fetch(`/api/payments/${id}`);
       if (response.ok) {
         const data = await response.json();
         const payment = data.payment;
@@ -89,7 +96,7 @@ export default function EditPaymentPage({ params }: { params: { id: string } }) 
     setSaving(true);
 
     try {
-      const response = await fetch(`/api/payments/${params.id}`, {
+      const response = await fetch(`/api/payments/${paymentId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +105,7 @@ export default function EditPaymentPage({ params }: { params: { id: string } }) 
       });
 
       if (response.ok) {
-        router.push(`/payments/${params.id}`);
+        router.push(`/payments/${paymentId}`);
       } else {
         const error = await response.json();
         alert(error.error || 'Ошибка при обновлении платежа');
@@ -175,7 +182,7 @@ export default function EditPaymentPage({ params }: { params: { id: string } }) 
   return (
     <div className="container mx-auto p-6 max-w-2xl">
       <div className="flex items-center gap-4 mb-6">
-        <Link href={`/payments/${params.id}`}>
+        <Link href={`/payments/${paymentId}`}>
           <Button variant="ghost" size="sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Назад к платежу
@@ -269,7 +276,7 @@ export default function EditPaymentPage({ params }: { params: { id: string } }) 
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                placeholder="Описание платежа"
+                placeholder="Введите описание платежа"
                 rows={3}
               />
             </div>
@@ -334,19 +341,6 @@ export default function EditPaymentPage({ params }: { params: { id: string } }) 
             </div>
 
             <div className="flex gap-4 pt-4">
-              <Button type="submit" disabled={saving} className="flex-1">
-                {saving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                Сохранить изменения
-              </Button>
-              <Link href={`/payments/${params.id}`}>
-                <Button type="button" variant="outline">
-                  Отмена
-                </Button>
-              </Link>
             </div>
           </form>
         </CardContent>
@@ -358,7 +352,7 @@ export default function EditPaymentPage({ params }: { params: { id: string } }) 
           <CardTitle className="text-lg">💡 Советы</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>• При изменении статуса на "Оплачено" автоматически устанавливается дата оплаты</p>
+          <p>• При изменении статуса на &quot;Оплачено&quot; автоматически устанавливается дата оплаты</p>
           <p>• Дату оплаты можно установить вручную</p>
           <p>• Оплаченные платежи нельзя удалить без изменения статуса</p>
           <p>• Привязка к проекту помогает отслеживать финансы по проектам</p>

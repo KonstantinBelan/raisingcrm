@@ -21,20 +21,26 @@ import {
 import Link from 'next/link';
 import { Payment, PaymentStatus } from '@/types';
 
-export default function PaymentDetailPage({ params }: { params: { id: string } }) {
+export default function PaymentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [payment, setPayment] = useState<Payment | null>(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [paymentId, setPaymentId] = useState<string>('');
 
   useEffect(() => {
-    fetchPayment();
-  }, [params.id]);
+    const initializePayment = async () => {
+      const { id } = await params;
+      setPaymentId(id);
+      fetchPayment(id);
+    };
+    initializePayment();
+  }, [params]);
 
-  const fetchPayment = async () => {
+  const fetchPayment = async (id: string) => {
     try {
-      const response = await fetch(`/api/payments/${params.id}`);
+      const response = await fetch(`/api/payments/${id}`);
       if (response.ok) {
         const data = await response.json();
         setPayment(data.payment);
@@ -48,12 +54,12 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
     }
   };
 
-  const handleStatusChange = async (newStatus: PaymentStatus) => {
+  const handleStatusChange = async (newStatus: string) => {
     if (!payment) return;
 
     setUpdating(true);
     try {
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         ...payment,
         status: newStatus,
       };
@@ -63,7 +69,7 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
         updateData.paidDate = new Date().toISOString();
       }
 
-      const response = await fetch(`/api/payments/${params.id}`, {
+      const response = await fetch(`/api/payments/${paymentId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -93,7 +99,7 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
 
     setDeleting(true);
     try {
-      const response = await fetch(`/api/payments/${params.id}`, {
+      const response = await fetch(`/api/payments/${paymentId}`, {
         method: 'DELETE',
       });
 
@@ -338,7 +344,7 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
           </CardHeader>
           <CardContent>
             <div className="flex gap-3">
-              {payment.status !== 'PAID' && (
+              {(payment.status as PaymentStatus) !== PaymentStatus.PAID && (
                 <Button 
                   onClick={() => handleStatusChange('PAID')}
                   disabled={updating}

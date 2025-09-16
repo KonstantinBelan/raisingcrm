@@ -6,8 +6,9 @@ const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const user = await getUser();
     if (!user) {
@@ -16,7 +17,7 @@ export async function GET(
 
     const payment = await prisma.payment.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: user.id,
       },
       include: {
@@ -50,8 +51,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const user = await getUser();
     if (!user) {
@@ -79,7 +81,7 @@ export async function PUT(
     // Check if payment exists and belongs to user
     const existingPayment = await prisma.payment.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: user.id,
       },
     });
@@ -106,7 +108,7 @@ export async function PUT(
     }
 
     // Prepare update data
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       amount: Number(amount),
       currency: currency.trim(),
       description: description?.trim() || null,
@@ -136,7 +138,7 @@ export async function PUT(
 
     const payment = await prisma.payment.update({
       where: {
-        id: params.id,
+        id: id,
       },
       data: updateData,
       include: {
@@ -166,8 +168,9 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const user = await getUser();
     if (!user) {
@@ -177,7 +180,7 @@ export async function DELETE(
     // Check if payment exists and belongs to user
     const payment = await prisma.payment.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: user.id,
       },
     });
@@ -198,7 +201,7 @@ export async function DELETE(
 
     await prisma.payment.delete({
       where: {
-        id: params.id,
+        id: id,
       },
     });
 

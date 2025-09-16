@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Calendar, Clock, User, Briefcase } from 'lucide-react';
 import Link from 'next/link';
-import { Task, TaskStatus, TaskPriority } from '@/types';
+import { Task, TaskStatus, Priority } from '@/types';
 
 const statusColors = {
   TODO: 'bg-gray-100 text-gray-800',
@@ -42,7 +42,7 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
-  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'ALL'>('ALL');
+  const [priorityFilter, setPriorityFilter] = useState<Priority | 'ALL'>('ALL');
 
   useEffect(() => {
     fetchTasks();
@@ -70,11 +70,11 @@ export default function TasksPage() {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  const formatDate = (date: string) => {
+  const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('ru-RU');
   };
 
-  const isOverdue = (dueDate: string) => {
+  const isOverdue = (dueDate: Date) => {
     return new Date(dueDate) < new Date() && new Date(dueDate).toDateString() !== new Date().toDateString();
   };
 
@@ -188,7 +188,7 @@ export default function TasksPage() {
         </select>
         <select
           value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value as TaskPriority | 'ALL')}
+          onChange={(e) => setPriorityFilter(e.target.value as Priority | 'ALL')}
           className="px-3 py-2 border border-input bg-background rounded-md text-sm"
         >
           <option value="ALL">Все приоритеты</option>

@@ -38,30 +38,40 @@ const priorityLabels = {
   URGENT: 'Срочный',
 };
 
-export default function TaskDetailPage({ params }: { params: { id: string } }) {
+export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
-  const [timeTracking, setTimeTracking] = useState(false);
-  const [sessionTime, setSessionTime] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+  const [taskId, setTaskId] = useState<string>('');
+  const [timeTracking, setTimeTracking] = useState({
+    isTracking: false,
+    startTime: null as Date | null,
+    elapsedTime: 0,
+  });
 
   useEffect(() => {
-    fetchTask();
-  }, [params.id]);
+    const initializeTask = async () => {
+      const { id } = await params;
+      setTaskId(id);
+      fetchTask(id);
+    };
+    initializeTask();
+  }, [params]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (timeTracking) {
+    if (timeTracking.isTracking) {
       interval = setInterval(() => {
-        setSessionTime(prev => prev + 1);
+        setTimeTracking(prev => ({ ...prev, elapsedTime: prev.elapsedTime + 1 }));
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [timeTracking]);
+  }, [timeTracking.isTracking]);
 
-  const fetchTask = async () => {
+  const fetchTask = async (id: string) => {
     try {
-      const response = await fetch(`/api/tasks/${params.id}`);
+      const response = await fetch(`/api/tasks/${id}`);
       if (response.ok) {
         const data = await response.json();
         setTask(data.task);
@@ -81,7 +91,7 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
     }
 
     try {
-      const response = await fetch(`/api/tasks/${params.id}`, {
+      const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'DELETE',
       });
 
@@ -100,7 +110,7 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
     if (!task) return;
 
     try {
-      const response = await fetch(`/api/tasks/${params.id}`, {
+      const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -121,16 +131,15 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
   };
 
   const handleTimeTracking = () => {
-    if (timeTracking) {
+    if (timeTracking.isTracking) {
       // Stop tracking and save time
-      if (sessionTime > 0) {
+      if (timeTracking.elapsedTime > 0) {
         saveTimeSession();
       }
-      setTimeTracking(false);
+      setTimeTracking(prev => ({ ...prev, isTracking: false }));
     } else {
       // Start tracking
-      setSessionTime(0);
-      setTimeTracking(true);
+      setTimeTracking(prev => ({ ...prev, isTracking: true, startTime: new Date(), elapsedTime: 0 }));
       if (task?.status === 'TODO') {
         handleStatusChange('IN_PROGRESS');
       }
@@ -138,24 +147,23 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
   };
 
   const saveTimeSession = async () => {
-    if (!task || sessionTime === 0) return;
-
-    const hoursToAdd = sessionTime / 3600; // Convert seconds to hours
-    const newActualHours = (task.actualHours || 0) + hoursToAdd;
+    if (!task || timeTracking.elapsedTime === 0) return;
 
     try {
-      const response = await fetch(`/api/tasks/${params.id}`, {
+      const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ actualHours: newActualHours }),
+        body: JSON.stringify({
+          actualHours: task.actualHours ? task.actualHours + timeTracking.elapsedTime / 3600 : timeTracking.elapsedTime / 3600,
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
         setTask(data.task);
-        setSessionTime(0);
+        setTimeTracking(prev => ({ ...prev, elapsedTime: 0 }));
       }
     } catch (error) {
       console.error('Error saving time:', error);
@@ -300,7 +308,7 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Текущая сессия</p>
-              <p className="text-2xl font-mono font-bold">{formatTime(sessionTime)}</p>
+              <p className="text-2xl font-mono font-bold">{formatTime(timeTracking.elapsedTime)}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Всего потрачено</p>
@@ -315,9 +323,9 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
           <div className="flex gap-2">
             <Button
               onClick={handleTimeTracking}
-              variant={timeTracking ? "destructive" : "default"}
+              variant={timeTracking.isTracking ? "destructive" : "default"}
             >
-              {timeTracking ? (
+              {timeTracking.isTracking ? (
                 <>
                   <Square className="w-4 h-4 mr-2" />
                   Остановить
@@ -329,7 +337,7 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
                 </>
               )}
             </Button>
-            {sessionTime > 0 && !timeTracking && (
+            {timeTracking.elapsedTime > 0 && !timeTracking.isTracking && (
               <Button onClick={saveTimeSession} variant="outline">
                 Сохранить время
               </Button>

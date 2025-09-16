@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const projectId = searchParams.get('projectId');
 
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       userId: user.id,
     };
 
@@ -64,16 +64,19 @@ export async function GET(request: NextRequest) {
 
     // Update overdue payments
     const now = new Date();
-    const overduePayments = payments.filter(payment => 
-      payment.status === 'PENDING' && 
-      payment.dueDate && 
-      new Date(payment.dueDate) < now
-    );
+    const updatedPayments = payments.map((payment: { dueDate: Date | null; status: string; id: string }) => {
+      if (payment.status === 'PENDING' && payment.dueDate && new Date(payment.dueDate) < now) {
+        return { ...payment, status: 'OVERDUE' };
+      }
+      return payment;
+    });
+
+    const overduePayments = updatedPayments.filter((p: { status: string; id: string; dueDate: Date | null }) => p.status === 'OVERDUE');
 
     if (overduePayments.length > 0) {
       await prisma.payment.updateMany({
         where: {
-          id: { in: overduePayments.map(p => p.id) },
+          id: { in: overduePayments.map((p: { id: string }) => p.id) },
         },
         data: {
           status: 'OVERDUE',

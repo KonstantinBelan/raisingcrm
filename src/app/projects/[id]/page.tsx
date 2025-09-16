@@ -16,6 +16,7 @@ const statusColors = {
   ON_HOLD: 'bg-orange-100 text-orange-800',
   COMPLETED: 'bg-blue-100 text-blue-800',
   CANCELLED: 'bg-red-100 text-red-800',
+  PAUSED: 'bg-gray-100 text-gray-800',
 };
 
 const statusLabels = {
@@ -24,6 +25,7 @@ const statusLabels = {
   ON_HOLD: 'Приостановлен',
   COMPLETED: 'Завершен',
   CANCELLED: 'Отменен',
+  PAUSED: 'Приостановлен',
 };
 
 const taskStatusColors = {
@@ -40,18 +42,26 @@ const taskStatusLabels = {
   DONE: 'Выполнено',
 };
 
-export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [projectId, setProjectId] = useState<string>('');
 
   useEffect(() => {
-    fetchProject();
-  }, [params.id]);
+    const initializeProject = async () => {
+      const { id } = await params;
+      setProjectId(id);
+      fetchProject(id);
+    };
+    initializeProject();
+  }, [params]);
 
-  const fetchProject = async () => {
+  const fetchProject = async (id: string) => {
     try {
-      const response = await fetch(`/api/projects/${params.id}`);
+      const response = await fetch(`/api/projects/${id}`);
       if (response.ok) {
         const data = await response.json();
         setProject(data.project);
@@ -71,7 +81,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     }
 
     try {
-      const response = await fetch(`/api/projects/${params.id}`, {
+      const response = await fetch(`/api/projects/${projectId}`, {
         method: 'DELETE',
       });
 
@@ -223,18 +233,18 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 <span className="font-medium">{project.client.name}</span>
               </div>
             )}
-            {project.startDate && (
+            {project.createdAt && (
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Начало:</span>
-                <span className="font-medium">{formatDate(project.startDate)}</span>
+                <span className="text-sm text-muted-foreground">Создан:</span>
+                <span className="font-medium">{formatDate(project.createdAt.toString())}</span>
               </div>
             )}
             {project.endDate && (
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Окончание:</span>
-                <span className="font-medium">{formatDate(project.endDate)}</span>
+                <span className="font-medium">{formatDate(project.endDate.toString())}</span>
               </div>
             )}
           </div>
@@ -368,7 +378,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         )}
                         <div className="flex gap-4 text-xs text-muted-foreground">
                           {task.dueDate && (
-                            <span>Дедлайн: {formatDate(task.dueDate)}</span>
+                            <span>Дедлайн: {formatDate(task.dueDate.toString())}</span>
                           )}
                           {task.estimatedHours && (
                             <span>Оценка: {task.estimatedHours}ч</span>
@@ -430,10 +440,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         )}
                         <div className="flex gap-4 text-xs text-muted-foreground">
                           {payment.dueDate && (
-                            <span>Срок: {formatDate(payment.dueDate)}</span>
+                            <span>Срок: {formatDate(payment.dueDate.toString())}</span>
                           )}
                           {payment.paidDate && (
-                            <span>Оплачено: {formatDate(payment.paidDate)}</span>
+                            <span>Оплачено: {formatDate(payment.paidDate.toString())}</span>
                           )}
                         </div>
                       </div>

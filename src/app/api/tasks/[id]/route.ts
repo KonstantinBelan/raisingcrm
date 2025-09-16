@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth(request);
@@ -15,9 +15,11 @@ export async function GET(
       );
     }
 
+    const { id } = await params;
+
     const task = await prisma.task.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.userId,
       },
       include: {
@@ -28,11 +30,11 @@ export async function GET(
             title: true,
           },
         },
-        tasks: {
+        subtasks: {
           include: {
             _count: {
               select: {
-                tasks: true,
+                subtasks: true,
               },
             },
           },
@@ -42,7 +44,7 @@ export async function GET(
         },
         _count: {
           select: {
-            tasks: true,
+            subtasks: true,
           },
         },
       },
@@ -70,7 +72,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth(request);
@@ -81,13 +83,14 @@ export async function PUT(
       );
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { title, description, status, priority, dueDate, estimatedHours, actualHours, projectId, parentTaskId } = body;
 
     // Check if task exists and belongs to user
     const existingTask = await prisma.task.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.userId,
       },
     });
@@ -135,7 +138,7 @@ export async function PUT(
 
     const task = await prisma.task.update({
       where: {
-        id: params.id,
+        id,
       },
       data: {
         title: title || existingTask.title,
@@ -151,7 +154,7 @@ export async function PUT(
       include: {
         project: true,
         parentTask: true,
-        tasks: true,
+        subtasks: true,
       },
     });
 
@@ -170,7 +173,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth(request);
@@ -181,10 +184,12 @@ export async function DELETE(
       );
     }
 
+    const { id } = await params;
+
     // Check if task exists and belongs to user
     const existingTask = await prisma.task.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.userId,
       },
     });
@@ -198,7 +203,7 @@ export async function DELETE(
 
     await prisma.task.delete({
       where: {
-        id: params.id,
+        id,
       },
     });
 

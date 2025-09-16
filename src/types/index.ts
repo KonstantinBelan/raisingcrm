@@ -184,7 +184,7 @@ export interface TelegramWebApp {
 }
 
 // API Response типы
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -264,7 +264,7 @@ export interface AIAnalysisResponse {
     deadline?: string;
     budget?: number;
     clientName?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   suggestions: string[];
 }

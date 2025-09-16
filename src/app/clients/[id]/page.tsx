@@ -22,19 +22,25 @@ import {
 import Link from 'next/link';
 import { Client, Project } from '@/types';
 
-export default function ClientDetailPage({ params }: { params: { id: string } }) {
+export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [clientId, setClientId] = useState<string>('');
 
   useEffect(() => {
-    fetchClient();
-  }, [params.id]);
+    const initializeClient = async () => {
+      const { id } = await params;
+      setClientId(id);
+      fetchClient(id);
+    };
+    initializeClient();
+  }, [params]);
 
-  const fetchClient = async () => {
+  const fetchClient = async (id: string) => {
     try {
-      const response = await fetch(`/api/clients/${params.id}`);
+      const response = await fetch(`/api/clients/${id}`);
       if (response.ok) {
         const data = await response.json();
         setClient(data.client);
@@ -55,7 +61,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
     setDeleting(true);
     try {
-      const response = await fetch(`/api/clients/${params.id}`, {
+      const response = await fetch(`/api/clients/${clientId}`, {
         method: 'DELETE',
       });
 

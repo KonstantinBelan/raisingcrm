@@ -11,10 +11,11 @@ import { ArrowLeft, Save, User } from 'lucide-react';
 import Link from 'next/link';
 import { Client } from '@/types';
 
-export default function EditClientPage({ params }: { params: { id: string } }) {
+export default function EditClientPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [clientId, setClientId] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -24,12 +25,17 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
   });
 
   useEffect(() => {
-    fetchClient();
-  }, [params.id]);
+    const initializeClient = async () => {
+      const { id } = await params;
+      setClientId(id);
+      fetchClient(id);
+    };
+    initializeClient();
+  }, [params]);
 
-  const fetchClient = async () => {
+  const fetchClient = async (id: string) => {
     try {
-      const response = await fetch(`/api/clients/${params.id}`);
+      const response = await fetch(`/api/clients/${id}`);
       if (response.ok) {
         const data = await response.json();
         const client: Client = data.client;
@@ -56,7 +62,7 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/clients/${params.id}`, {
+      const response = await fetch(`/api/clients/${clientId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -65,7 +71,7 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
       });
 
       if (response.ok) {
-        router.push(`/clients/${params.id}`);
+        router.push(`/clients/${clientId}`);
       } else {
         const error = await response.json();
         alert(error.error || 'Ошибка при обновлении клиента');
@@ -99,7 +105,7 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
   return (
     <div className="container mx-auto p-6 max-w-2xl">
       <div className="flex items-center gap-4 mb-6">
-        <Link href={`/clients/${params.id}`}>
+        <Link href={`/clients/${clientId}`}>
           <Button variant="ghost" size="sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Назад к клиенту
@@ -124,13 +130,13 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="name">Имя клиента *</Label>
+              <Label htmlFor="name">Адрес клиента *</Label>
               <Input
                 id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Введите имя клиента"
+                placeholder="Введите адрес клиента"
                 required
               />
             </div>
@@ -142,7 +148,7 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
                 name="company"
                 value={formData.company}
                 onChange={handleChange}
-                placeholder="Название компании"
+                placeholder="Введите название компании"
               />
             </div>
 
@@ -193,7 +199,7 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
                 )}
                 Сохранить изменения
               </Button>
-              <Link href={`/clients/${params.id}`}>
+              <Link href={`/clients/${clientId}`}>
                 <Button type="button" variant="outline">
                   Отмена
                 </Button>
@@ -212,7 +218,7 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
           <p>• Имя клиента - обязательное поле</p>
           <p>• Email должен быть уникальным для каждого клиента</p>
           <p>• В заметках можно указать предпочтения клиента, особенности работы и другую важную информацию</p>
-          <p>• Изменения сохранятся только после нажатия кнопки "Сохранить изменения"</p>
+          <p>• Изменения сохранятся только после нажатия кнопки &quot;Сохранить изменения&quot;</p>
         </CardContent>
       </Card>
     </div>

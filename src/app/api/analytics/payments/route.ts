@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { getUser } from '@/lib/auth';
+
+type PaymentWithProject = {
+  id: string;
+  amount: Decimal;
+  currency: string;
+  status: string;
+  project: {
+    id: string;
+    title: string;
+    client: {
+      id: string;
+      name: string;
+    } | null;
+  } | null;
+};
 
 const prisma = new PrismaClient();
 
@@ -19,7 +35,7 @@ export async function GET(request: NextRequest) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - periodDays);
 
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       userId: user.id,
       createdAt: {
         gte: startDate,
@@ -50,19 +66,19 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate statistics
-    const totalAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
+    const totalAmount = payments.reduce((sum: number, payment: PaymentWithProject) => sum + Number(payment.amount), 0);
     const paidAmount = payments
-      .filter(p => p.status === 'PAID')
-      .reduce((sum, payment) => sum + payment.amount, 0);
+      .filter((p: PaymentWithProject) => p.status === 'PAID')
+      .reduce((sum: number, payment: PaymentWithProject) => sum + Number(payment.amount), 0);
     const pendingAmount = payments
-      .filter(p => p.status === 'PENDING')
-      .reduce((sum, payment) => sum + payment.amount, 0);
+      .filter((p: PaymentWithProject) => p.status === 'PENDING')
+      .reduce((sum: number, payment: PaymentWithProject) => sum + Number(payment.amount), 0);
     const overdueAmount = payments
-      .filter(p => p.status === 'OVERDUE')
-      .reduce((sum, payment) => sum + payment.amount, 0);
+      .filter((p: PaymentWithProject) => p.status === 'OVERDUE')
+      .reduce((sum: number, payment: PaymentWithProject) => sum + Number(payment.amount), 0);
 
     // Group by currency
-    const byCurrency = payments.reduce((acc, payment) => {
+    const byCurrency = payments.reduce((acc: Record<string, { total: number; paid: number; pending: number; overdue: number; }>, payment: PaymentWithProject) => {
       if (!acc[payment.currency]) {
         acc[payment.currency] = {
           total: 0,
@@ -72,21 +88,21 @@ export async function GET(request: NextRequest) {
         };
       }
       
-      acc[payment.currency].total += payment.amount;
+      acc[payment.currency].total += Number(payment.amount);
       
       if (payment.status === 'PAID') {
-        acc[payment.currency].paid += payment.amount;
+        acc[payment.currency].paid += Number(payment.amount);
       } else if (payment.status === 'PENDING') {
-        acc[payment.currency].pending += payment.amount;
+        acc[payment.currency].pending += Number(payment.amount);
       } else if (payment.status === 'OVERDUE') {
-        acc[payment.currency].overdue += payment.amount;
+        acc[payment.currency].overdue += Number(payment.amount);
       }
       
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, { total: number; paid: number; pending: number; overdue: number; }>);
 
     // Group by project
-    const byProject = payments.reduce((acc, payment) => {
+    const byProject = payments.reduce((acc: Record<string, { id: string | null; title: string; client: string | null; total: number; paid: number; pending: number; overdue: number; count: number; }>, payment: PaymentWithProject) => {
       const projectKey = payment.project?.id || 'no-project';
       const projectTitle = payment.project?.title || 'Без проекта';
       
@@ -103,19 +119,19 @@ export async function GET(request: NextRequest) {
         };
       }
       
-      acc[projectKey].total += payment.amount;
+      acc[projectKey].total += Number(payment.amount);
       acc[projectKey].count += 1;
       
       if (payment.status === 'PAID') {
-        acc[projectKey].paid += payment.amount;
+        acc[projectKey].paid += Number(payment.amount);
       } else if (payment.status === 'PENDING') {
-        acc[projectKey].pending += payment.amount;
+        acc[projectKey].pending += Number(payment.amount);
       } else if (payment.status === 'OVERDUE') {
-        acc[projectKey].overdue += payment.amount;
+        acc[projectKey].overdue += Number(payment.amount);
       }
       
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, { id: string | null; title: string; client: string | null; total: number; paid: number; pending: number; overdue: number; count: number; }>);
 
     // Monthly breakdown for the last 12 months
     const monthlyData = [];
@@ -136,10 +152,10 @@ export async function GET(request: NextRequest) {
         },
       });
       
-      const monthTotal = monthPayments.reduce((sum, p) => sum + p.amount, 0);
+      const monthTotal = monthPayments.reduce((sum: number, p: { amount: Decimal }) => sum + Number(p.amount), 0);
       const monthPaid = monthPayments
-        .filter(p => p.status === 'PAID')
-        .reduce((sum, p) => sum + p.amount, 0);
+        .filter((p: { status: string }) => p.status === 'PAID')
+        .reduce((sum: number, p: { amount: Decimal }) => sum + Number(p.amount), 0);
       
       monthlyData.push({
         month: monthStart.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
@@ -213,9 +229,9 @@ export async function GET(request: NextRequest) {
         pending: pendingAmount,
         overdue: overdueAmount,
         count: payments.length,
-        paidCount: payments.filter(p => p.status === 'PAID').length,
-        pendingCount: payments.filter(p => p.status === 'PENDING').length,
-        overdueCount: payments.filter(p => p.status === 'OVERDUE').length,
+        paidCount: payments.filter((p: { status: string }) => p.status === 'PAID').length,
+        pendingCount: payments.filter((p: { status: string }) => p.status === 'PENDING').length,
+        overdueCount: payments.filter((p: { status: string }) => p.status === 'OVERDUE').length,
       },
       byCurrency,
       byProject: Object.values(byProject),

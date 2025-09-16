@@ -19,15 +19,16 @@ const statusOptions = [
   { value: 'CANCELLED', label: 'Отменен' },
 ];
 
-export default function EditProjectPage({ params }: { params: { id: string } }) {
+export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
+  const [projectId, setProjectId] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    status: 'ACTIVE' as ProjectStatus,
+    status: 'PLANNING' as ProjectStatus,
     budget: '',
     startDate: '',
     endDate: '',
@@ -35,12 +36,18 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
   });
 
   useEffect(() => {
-    Promise.all([fetchProject(), fetchClients()]);
-  }, [params.id]);
+    const initializeProject = async () => {
+      const { id } = await params;
+      setProjectId(id);
+      fetchProject(id);
+      fetchClients();
+    };
+    initializeProject();
+  }, [params]);
 
-  const fetchProject = async () => {
+  const fetchProject = async (id: string) => {
     try {
-      const response = await fetch(`/api/projects/${params.id}`);
+      const response = await fetch(`/api/projects/${id}`);
       if (response.ok) {
         const data = await response.json();
         const project: Project = data.project;
@@ -50,7 +57,7 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
           description: project.description || '',
           status: project.status,
           budget: project.budget ? project.budget.toString() : '',
-          startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
+          startDate: project.createdAt ? new Date(project.createdAt).toISOString().split('T')[0] : '',
           endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '',
           clientId: project.clientId || '',
         });
@@ -81,7 +88,7 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/projects/${params.id}`, {
+      const response = await fetch(`/api/projects/${projectId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +97,7 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
       });
 
       if (response.ok) {
-        router.push(`/projects/${params.id}`);
+        router.push(`/projects/${projectId}`);
       } else {
         const error = await response.json();
         alert(error.error || 'Ошибка при обновлении проекта');
@@ -124,7 +131,7 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
   return (
     <div className="container mx-auto p-6 max-w-2xl">
       <div className="flex items-center gap-4 mb-6">
-        <Link href={`/projects/${params.id}`}>
+        <Link href={`/projects/${projectId}`}>
           <Button variant="ghost" size="sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Назад к проекту
@@ -249,7 +256,7 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
                 )}
                 Сохранить изменения
               </Button>
-              <Link href={`/projects/${params.id}`}>
+              <Link href={`/projects/${projectId}`}>
                 <Button type="button" variant="outline">
                   Отмена
                 </Button>

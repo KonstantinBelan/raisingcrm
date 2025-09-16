@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { TaskStatus, Priority, ProjectStatus, PaymentStatus } from '../src/types';
 
 const prisma = new PrismaClient();
 
@@ -50,11 +51,10 @@ async function main() {
     data: {
       title: 'Интернет-магазин электроники',
       description: 'Разработка современного интернет-магазина с каталогом товаров, корзиной и системой оплаты',
-      status: 'ACTIVE',
-      budget: 150000,
+      status: ProjectStatus.ACTIVE,
+      priority: Priority.MEDIUM,
       currency: 'RUB',
       deadline: new Date('2024-12-31'),
-      priority: 'HIGH',
       userId: testUser.id,
       clientId: client1.id,
     },
@@ -64,11 +64,10 @@ async function main() {
     data: {
       title: 'Мобильное приложение для доставки',
       description: 'iOS и Android приложение для службы доставки еды',
-      status: 'ACTIVE',
-      budget: 200000,
+      status: ProjectStatus.ACTIVE,
+      priority: Priority.MEDIUM,
       currency: 'RUB',
       deadline: new Date('2025-02-15'),
-      priority: 'MEDIUM',
       userId: testUser.id,
       clientId: client2.id,
     },
@@ -78,11 +77,10 @@ async function main() {
     data: {
       title: 'Корпоративный сайт',
       description: 'Создание корпоративного сайта с админ-панелью',
-      status: 'COMPLETED',
-      budget: 80000,
+      status: ProjectStatus.COMPLETED,
+      priority: Priority.LOW,
       currency: 'RUB',
       deadline: new Date('2024-10-01'),
-      priority: 'LOW',
       userId: testUser.id,
       clientId: client1.id,
     },
@@ -95,8 +93,8 @@ async function main() {
     {
       title: 'Дизайн главной страницы',
       description: 'Создать макет главной страницы интернет-магазина',
-      status: 'DONE',
-      priority: 'HIGH',
+      status: TaskStatus.DONE,
+      priority: Priority.HIGH,
       estimatedHours: 8,
       actualHours: 6,
       deadline: new Date('2024-11-15'),
@@ -105,8 +103,8 @@ async function main() {
     {
       title: 'Разработка каталога товаров',
       description: 'Реализовать функционал каталога с фильтрацией и поиском',
-      status: 'IN_PROGRESS',
-      priority: 'HIGH',
+      status: TaskStatus.IN_PROGRESS,
+      priority: Priority.HIGH,
       estimatedHours: 16,
       actualHours: 8,
       deadline: new Date('2024-11-30'),
@@ -115,8 +113,8 @@ async function main() {
     {
       title: 'Интеграция платежной системы',
       description: 'Подключить Stripe/YooKassa для приема платежей',
-      status: 'TODO',
-      priority: 'MEDIUM',
+      status: TaskStatus.TODO,
+      priority: Priority.MEDIUM,
       estimatedHours: 12,
       deadline: new Date('2024-12-15'),
       projectId: project1.id,
@@ -124,8 +122,8 @@ async function main() {
     {
       title: 'UI/UX дизайн приложения',
       description: 'Создать дизайн-систему и макеты всех экранов',
-      status: 'IN_PROGRESS',
-      priority: 'HIGH',
+      status: TaskStatus.IN_PROGRESS,
+      priority: Priority.HIGH,
       estimatedHours: 24,
       actualHours: 12,
       deadline: new Date('2024-12-01'),
@@ -134,9 +132,18 @@ async function main() {
     {
       title: 'Разработка API',
       description: 'Backend API для мобильного приложения',
-      status: 'TODO',
-      priority: 'HIGH',
+      status: TaskStatus.REVIEW,
+      priority: Priority.LOW,
       estimatedHours: 32,
+      deadline: new Date('2025-01-15'),
+      projectId: project2.id,
+    },
+    {
+      title: 'Тестирование приложения',
+      description: 'Полное тестирование функционала мобильного приложения',
+      status: TaskStatus.TODO,
+      priority: Priority.MEDIUM,
+      estimatedHours: 16,
       deadline: new Date('2025-01-15'),
       projectId: project2.id,
     },
@@ -158,7 +165,7 @@ async function main() {
     {
       amount: 50000,
       currency: 'RUB',
-      status: 'PAID',
+      status: PaymentStatus.PAID,
       description: 'Предоплата 50% за интернет-магазин',
       dueDate: new Date('2024-11-01'),
       paidDate: new Date('2024-10-28'),
@@ -167,7 +174,7 @@ async function main() {
     {
       amount: 100000,
       currency: 'RUB',
-      status: 'PENDING',
+      status: PaymentStatus.PENDING,
       description: 'Финальный платеж за интернет-магазин',
       dueDate: new Date('2024-12-31'),
       projectId: project1.id,
@@ -175,7 +182,7 @@ async function main() {
     {
       amount: 80000,
       currency: 'RUB',
-      status: 'PAID',
+      status: PaymentStatus.PAID,
       description: 'Полная оплата за корпоративный сайт',
       dueDate: new Date('2024-10-01'),
       paidDate: new Date('2024-09-30'),
@@ -184,7 +191,7 @@ async function main() {
     {
       amount: 60000,
       currency: 'RUB',
-      status: 'OVERDUE',
+      status: PaymentStatus.OVERDUE,
       description: 'Предоплата за мобильное приложение',
       dueDate: new Date('2024-11-01'),
       projectId: project2.id,

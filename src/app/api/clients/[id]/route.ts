@@ -6,8 +6,9 @@ const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const user = await getUser();
     if (!user) {
@@ -16,7 +17,7 @@ export async function GET(
 
     const client = await prisma.client.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: user.id,
       },
       include: {
@@ -64,8 +65,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const user = await getUser();
     if (!user) {
@@ -93,7 +95,7 @@ export async function PUT(
     // Check if client exists and belongs to user
     const existingClient = await prisma.client.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: user.id,
       },
     });
@@ -108,7 +110,7 @@ export async function PUT(
         where: {
           userId: user.id,
           email: email,
-          id: { not: params.id },
+          id: { not: id },
         },
       });
 
@@ -122,7 +124,7 @@ export async function PUT(
 
     const client = await prisma.client.update({
       where: {
-        id: params.id,
+        id: id,
       },
       data: {
         name: name.trim(),
@@ -172,8 +174,9 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const user = await getUser();
     if (!user) {
@@ -183,7 +186,7 @@ export async function DELETE(
     // Check if client exists and belongs to user
     const client = await prisma.client.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: user.id,
       },
       include: {
@@ -211,7 +214,7 @@ export async function DELETE(
 
     await prisma.client.delete({
       where: {
-        id: params.id,
+        id: id,
       },
     });
 

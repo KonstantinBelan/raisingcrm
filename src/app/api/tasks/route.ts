@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
             title: true,
           },
         },
-        tasks: {
+        subtasks: {
           select: {
             id: true,
             title: true,
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         },
         _count: {
           select: {
-            tasks: true,
+            subtasks: true,
           },
         },
       },
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
             title: true,
           },
         },
-        tasks: true,
+        subtasks: true,
       },
     });
 
