@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { telegramWebApp } from '@/lib/telegram';
-import { Briefcase, CheckSquare, Users, CreditCard, Bell, TrendingUp, Plus, BarChart3 } from 'lucide-react';
+import { Briefcase, CheckSquare, Users, CreditCard, Bell, TrendingUp, Plus, BarChart3, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Dashboard() {
@@ -168,10 +168,16 @@ export default function Dashboard() {
               Платежи
             </Button>
           </Link>
+          <Link href="/calendar">
+            <Button className="w-full justify-start" variant="outline">
+              <Calendar className="w-4 h-4 mr-2" />
+              Календарь
+            </Button>
+          </Link>
           <Link href="/analytics">
-            <Button className="w-full justify-start col-span-2" variant="outline">
+            <Button className="w-full justify-start" variant="outline">
               <BarChart3 className="w-4 h-4 mr-2" />
-              Финансовая аналитика
+              Аналитика
             </Button>
           </Link>
         </CardContent>

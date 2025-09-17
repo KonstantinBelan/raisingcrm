@@ -12,7 +12,7 @@ export async function auth(request: NextRequest): Promise<AuthSession | null> {
     // For development, return a mock session
     // In production, this would validate the actual Telegram WebApp data
     return {
-      userId: 'test-user-1',
+      userId: 'cmfmq07ub0000nlarbsy9j798',
       telegramId: '123456789',
       username: 'testuser',
       firstName: 'Тест',
@@ -28,7 +28,7 @@ export async function getUser(): Promise<{ id: string; telegramId: string; usern
     // For development, return a mock user
     // In production, this would get the current user from session/token
     return {
-      id: 'test-user-1',
+      id: 'cmfmq07ub0000nlarbsy9j798',
       telegramId: '123456789',
       username: 'testuser',
       firstName: 'Тест',

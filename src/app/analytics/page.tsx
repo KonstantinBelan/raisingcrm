@@ -19,6 +19,22 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Project, Payment } from '@/types';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  Area,
+  AreaChart
+} from 'recharts';
 
 interface AnalyticsData {
   summary: {
@@ -240,42 +256,63 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* By Currency */}
+            {/* Payment Status Distribution */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <PieChart className="w-5 h-5" />
-                  По валютам
+                  Распределение платежей
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {Object.entries(analytics.byCurrency).map(([currency, data]) => (
-                    <div key={currency} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{currency}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {formatCurrency(data.total, currency)}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-sm">
-                        <div className="text-green-600">
-                          Получено: {formatCurrency(data.paid, currency)}
-                        </div>
-                        <div className="text-yellow-600">
-                          Ожидается: {formatCurrency(data.pending, currency)}
-                        </div>
-                        <div className="text-red-600">
-                          Просрочено: {formatCurrency(data.overdue, currency)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <ResponsiveContainer width="100%" height={300}>
+                  <RechartsPieChart>
+                    <Pie
+                      data={[
+                        { name: 'Получено', value: analytics.summary.paid, color: '#22c55e' },
+                        { name: 'Ожидается', value: analytics.summary.pending, color: '#eab308' },
+                        { name: 'Просрочено', value: analytics.summary.overdue, color: '#ef4444' }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Получено', value: analytics.summary.paid, color: '#22c55e' },
+                        { name: 'Ожидается', value: analytics.summary.pending, color: '#eab308' },
+                        { name: 'Просрочено', value: analytics.summary.overdue, color: '#ef4444' }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+                <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
+                  <div className="text-center">
+                    <div className="w-3 h-3 bg-green-500 rounded-full mx-auto mb-1"></div>
+                    <div className="font-medium">Получено</div>
+                    <div className="text-muted-foreground">{formatCurrency(analytics.summary.paid)}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full mx-auto mb-1"></div>
+                    <div className="font-medium">Ожидается</div>
+                    <div className="text-muted-foreground">{formatCurrency(analytics.summary.pending)}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-3 h-3 bg-red-500 rounded-full mx-auto mb-1"></div>
+                    <div className="font-medium">Просрочено</div>
+                    <div className="text-muted-foreground">{formatCurrency(analytics.summary.overdue)}</div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Monthly Trend */}
+            {/* Monthly Trend Chart */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -284,24 +321,22 @@ export default function AnalyticsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {analytics.monthlyData.slice(-6).map((month) => (
-                    <div key={month.month} className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">{month.month}</span>
-                        <span className="text-sm">{formatCurrency(month.total)}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-green-600 h-2 rounded-full"
-                          style={{
-                            width: month.total > 0 ? `${(month.paid / month.total) * 100}%` : '0%'
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={analytics.monthlyData.slice(-6)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis tickFormatter={(value: number) => formatCurrency(value).replace('₽', '₽')} />
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [
+                        formatCurrency(Number(value)), 
+                        name === 'paid' ? 'Получено' : name === 'pending' ? 'Ожидается' : 'Общая сумма'
+                      ]}
+                    />
+                    <Area type="monotone" dataKey="total" stackId="1" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+                    <Area type="monotone" dataKey="paid" stackId="2" stroke="#22c55e" fill="#22c55e" fillOpacity={0.6} />
+                    <Area type="monotone" dataKey="pending" stackId="3" stroke="#eab308" fill="#eab308" fillOpacity={0.6} />
+                  </AreaChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>

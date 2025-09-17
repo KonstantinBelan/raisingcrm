@@ -24,7 +24,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: raising-crm-app
     ports:
       - "3000:3000"
@@ -32,11 +32,10 @@ services:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://raising_user:raising_password@postgres:5432/raising_crm
       - REDIS_URL=redis://redis:6379
-      - TELEGRAM_BOT_TOKEN=8457777844:AAFtuDjO7u2P-Dl11vs4xnN5YcemZcMGdjE
-      - TELEGRAM_WEBHOOK_SECRET=63f4945d921d599f27ae4fdf5bada3f1
-      - OPENROUTER_API_KEY=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
-      - NEXTAUTH_SECRET=fe66bf856285a5e67381c46ddc480885
-      - NEXTAUTH_URL=http://localhost:3000
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-your_bot_token_here}
+      - TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET:-your_webhook_secret}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-your_nextauth_secret}
     depends_on:
       - postgres
       - redis

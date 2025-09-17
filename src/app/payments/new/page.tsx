@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ const currencies = [
   { value: 'EUR', label: '€ Евро' },
 ];
 
-export default function NewPaymentPage() {
+function NewPaymentForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -217,5 +217,18 @@ export default function NewPaymentPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function NewPaymentPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto p-6 max-w-2xl">
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-200 rounded mb-4"></div>
+        <div className="h-96 bg-gray-200 rounded"></div>
+      </div>
+    </div>}>
+      <NewPaymentForm />
+    </Suspense>
   );
 }
