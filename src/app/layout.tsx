@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { InstallPrompt, OfflineIndicator } from "@/components/pwa";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -11,6 +12,17 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Raising CRM - Telegram Mini App",
   description: "Мощная CRM-система для фрилансеров, интегрированная в Telegram",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Raising CRM",
+  },
+  icons: {
+    icon: "/icons/icon-192x192.png",
+    apple: "/icons/icon-192x192.png",
+  },
+  themeColor: "#3b82f6",
 };
 
 export const viewport: Viewport = {
@@ -36,6 +48,8 @@ export default function RootLayout({
           {children}
         </div>
         <Toaster />
+        <InstallPrompt />
+        <OfflineIndicator />
       </body>
     </html>
   );

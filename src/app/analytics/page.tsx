@@ -11,17 +11,15 @@ import {
   AlertTriangle,
   Calendar,
   FileText,
-  User,
   BarChart3,
   PieChart,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
 import { Project, Payment } from '@/types';
+import { ExportManager } from '@/components/export';
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -30,8 +28,6 @@ import {
   PieChart as RechartsPieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
   Area,
   AreaChart
 } from 'recharts';
@@ -157,13 +153,22 @@ export default function AnalyticsPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Финансовая аналитика</h1>
-          <p className="text-muted-foreground">
-            Обзор доходов и платежей за выбранный период
-          </p>
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              На главную
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold">Финансовая аналитика</h1>
+            <p className="text-muted-foreground">
+              Обзор доходов и платежей за выбранный период
+            </p>
+          </div>
         </div>
         <div className="flex gap-3">
+          <ExportManager />
           <select
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}

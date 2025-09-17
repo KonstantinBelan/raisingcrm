@@ -14,8 +14,7 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle,
-  Plus,
-  Filter
+  Plus
 } from 'lucide-react';
 import Link from 'next/link';
 

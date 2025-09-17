@@ -4,8 +4,22 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { telegramWebApp } from '@/lib/telegram';
-import { Briefcase, CheckSquare, Users, CreditCard, Bell, TrendingUp, Plus, BarChart3, Calendar } from 'lucide-react';
+import { 
+  BarChart3, 
+  Users, 
+  FolderOpen, 
+  CheckSquare, 
+  CreditCard,
+  Calendar,
+  Kanban,
+  Briefcase,
+  TrendingUp,
+  Plus,
+  Bell
+} from 'lucide-react';
 import Link from 'next/link';
+import { UpcomingReminders } from '@/components/reminders';
+import { ExportManager } from '@/components/export';
 
 export default function Dashboard() {
   const [user, setUser] = useState<{firstName?: string; lastName?: string; username?: string} | null>(null);
@@ -37,11 +51,14 @@ export default function Dashboard() {
   return (
     <div className="container mx-auto p-4 space-y-6">
       {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold text-primary">Raising CRM</h1>
-        <p className="text-muted-foreground">
-          Добро пожаловать, {user?.firstName || 'Фрилансер'}! 👋
-        </p>
+      <div className="flex justify-between items-center">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold text-primary">Raising CRM</h1>
+          <p className="text-muted-foreground">
+            Добро пожаловать, {user?.firstName || 'Фрилансер'}! 👋
+          </p>
+        </div>
+        <ExportManager />
       </div>
 
       {/* Stats Cards */}
@@ -156,6 +173,12 @@ export default function Dashboard() {
               Задачи
             </Button>
           </Link>
+          <Link href="/tasks/board">
+            <Button className="w-full justify-start" variant="outline">
+              <Kanban className="w-4 h-4 mr-2" />
+              Kanban доска
+            </Button>
+          </Link>
           <Link href="/clients">
             <Button className="w-full justify-start" variant="outline">
               <Users className="w-4 h-4 mr-2" />
@@ -178,6 +201,12 @@ export default function Dashboard() {
             <Button className="w-full justify-start" variant="outline">
               <BarChart3 className="w-4 h-4 mr-2" />
               Аналитика
+            </Button>
+          </Link>
+          <Link href="/reminders">
+            <Button className="w-full justify-start" variant="outline">
+              <Bell className="w-4 h-4 mr-2" />
+              Напоминания
             </Button>
           </Link>
         </CardContent>
@@ -213,37 +242,8 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Upcoming Deadlines */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center">
-            <Bell className="mr-2 h-4 w-4" />
-            Ближайшие дедлайны
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
-            <div>
-              <p className="text-sm font-medium">Сдача макетов</p>
-              <p className="text-xs text-muted-foreground">Проект: Интернет-магазин</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-medium text-red-600 dark:text-red-400">Завтра</p>
-              <p className="text-xs text-muted-foreground">15:00</p>
-            </div>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg">
-            <div>
-              <p className="text-sm font-medium">Презентация проекта</p>
-              <p className="text-xs text-muted-foreground">Проект: CRM система</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">3 дня</p>
-              <p className="text-xs text-muted-foreground">10:00</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Upcoming Reminders */}
+      <UpcomingReminders />
 
       {/* Bottom Navigation Placeholder */}
       <div className="h-16"></div>

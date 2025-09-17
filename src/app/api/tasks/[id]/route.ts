@@ -171,6 +171,69 @@ export async function PUT(
   }
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth(request);
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+    const { status } = body;
+
+    // Check if task exists and belongs to user
+    const existingTask = await prisma.task.findFirst({
+      where: {
+        id,
+        userId: session.userId,
+      },
+    });
+
+    if (!existingTask) {
+      return NextResponse.json(
+        { success: false, error: 'Task not found' },
+        { status: 404 }
+      );
+    }
+
+    const task = await prisma.task.update({
+      where: {
+        id,
+      },
+      data: {
+        status: status || existingTask.status,
+        updatedAt: new Date(),
+      },
+      include: {
+        project: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      task,
+    });
+  } catch (error) {
+    console.error('Error updating task status:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
