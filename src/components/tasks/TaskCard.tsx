@@ -16,7 +16,7 @@ import Link from 'next/link';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
-interface Task {
+export interface Task {
   id: string;
   title: string;
   description?: string;
@@ -60,14 +60,14 @@ const priorityConfig = {
   }
 };
 
-export function TaskCard({ task, isDragging = false }: TaskCardProps) {
+export function TaskCard({ task }: { task: Task }) {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
-    isDragging: isSortableDragging,
+    isDragging,
   } = useSortable({
     id: task.id,
   });
@@ -88,7 +88,9 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`${isDragging || isSortableDragging ? 'opacity-50' : ''}`}
+      className={`cursor-pointer transition-all duration-200 ${
+        isDragging ? 'opacity-50 scale-105 rotate-2' : 'hover:shadow-md'
+      }`}
     >
       <Card className={`
         cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow

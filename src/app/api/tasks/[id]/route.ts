@@ -119,8 +119,8 @@ export async function PUT(
       }
     }
 
-    // Validate parent task exists if provided
-    if (parentTaskId) {
+    // Validate parent task exists if provided and not empty
+    if (parentTaskId && parentTaskId !== '') {
       const parentTask = await prisma.task.findFirst({
         where: {
           id: parentTaskId,
@@ -149,7 +149,7 @@ export async function PUT(
         estimatedHours: estimatedHours !== undefined ? (estimatedHours ? parseFloat(estimatedHours) : null) : existingTask.estimatedHours,
         actualHours: actualHours !== undefined ? (actualHours ? parseFloat(actualHours) : null) : existingTask.actualHours,
         projectId: projectId !== undefined ? projectId : existingTask.projectId,
-        parentTaskId: parentTaskId !== undefined ? parentTaskId : existingTask.parentTaskId,
+        parentTaskId: parentTaskId !== undefined ? (parentTaskId === '' ? null : parentTaskId) : existingTask.parentTaskId,
       },
       include: {
         project: true,
@@ -187,6 +187,15 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     const { status } = body;
+
+    // Validate status enum
+    const validStatuses = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
+    if (status && !validStatuses.includes(status)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
+        { status: 400 }
+      );
+    }
 
     // Check if task exists and belongs to user
     const existingTask = await prisma.task.findFirst({

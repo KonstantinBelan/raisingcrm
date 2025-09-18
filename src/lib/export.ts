@@ -1,15 +1,8 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-
-// Extend jsPDF type to include autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
 
 interface ExportData {
   projects?: any[];
@@ -30,8 +23,13 @@ export class DataExporter {
     return format(new Date(date), 'dd.MM.yyyy', { locale: ru });
   }
 
-  private formatDateTime(date: string | Date): string {
-    return format(new Date(date), 'dd.MM.yyyy HH:mm', { locale: ru });
+  private formatDateTime(date: Date): string {
+    return format(date, 'dd.MM.yyyy HH:mm', { locale: ru });
+  }
+
+  private transliterate(text: string): string {
+    // Не транслитерируем, оставляем русские символы как есть
+    return text;
   }
 
   private formatCurrency(amount: number): string {
@@ -45,27 +43,33 @@ export class DataExporter {
   exportProjectsToPDF(projects: any[], options: ExportOptions): void {
     const doc = new jsPDF();
     
+    // Configure font for Cyrillic support
+    doc.setFont('helvetica');
+    
     // Title
     doc.setFontSize(16);
-    doc.text(options.title, 20, 20);
+    // Convert Cyrillic to Latin transliteration for PDF compatibility
+    const title = this.transliterate(options.title);
+    doc.text(title, 20, 20);
     
     if (options.includeDate) {
       doc.setFontSize(10);
-      doc.text(`Дата создания: ${this.formatDateTime(new Date())}`, 20, 30);
+      const dateText = this.transliterate(`Data sozdaniya: ${this.formatDateTime(new Date())}`);
+      doc.text(dateText, 20, 30);
     }
 
-    // Table data
+    // Table data with transliteration
     const tableData = projects.map(project => [
-      project.title,
-      project.client?.name || 'Без клиента',
-      project.status,
-      project.budget ? this.formatCurrency(project.budget) : 'Не указан',
-      project.deadline ? this.formatDate(project.deadline) : 'Не указан',
+      this.transliterate(project.title),
+      this.transliterate(project.client?.name || 'Bez klienta'),
+      this.transliterate(project.status),
+      project.budget ? this.formatCurrency(project.budget) : this.transliterate('Ne ukazan'),
+      project.deadline ? this.formatDate(project.deadline) : this.transliterate('Ne ukazan'),
       project._count?.tasks || 0,
     ]);
 
-    doc.autoTable({
-      head: [['Название', 'Клиент', 'Статус', 'Бюджет', 'Дедлайн', 'Задач']],
+    autoTable(doc, {
+      head: [[this.transliterate('Nazvanie'), this.transliterate('Klient'), this.transliterate('Status'), this.transliterate('Byudzhet'), this.transliterate('Dedlayn'), this.transliterate('Zadach')]],
       body: tableData,
       startY: options.includeDate ? 40 : 30,
       styles: { fontSize: 8 },
@@ -78,25 +82,27 @@ export class DataExporter {
   exportTasksToPDF(tasks: any[], options: ExportOptions): void {
     const doc = new jsPDF();
     
+    doc.setFont('helvetica');
+    
     doc.setFontSize(16);
-    doc.text(options.title, 20, 20);
+    doc.text(this.transliterate(options.title), 20, 20);
     
     if (options.includeDate) {
       doc.setFontSize(10);
-      doc.text(`Дата создания: ${this.formatDateTime(new Date())}`, 20, 30);
+      doc.text(this.transliterate(`Data sozdaniya: ${this.formatDateTime(new Date())}`), 20, 30);
     }
 
     const tableData = tasks.map(task => [
-      task.title,
-      task.project?.title || 'Без проекта',
-      task.status,
-      task.priority,
-      task.dueDate ? this.formatDate(task.dueDate) : 'Не указан',
-      task.estimatedHours || 'Не указано',
+      this.transliterate(task.title),
+      this.transliterate(task.project?.title || 'Bez proekta'),
+      this.transliterate(task.status),
+      this.transliterate(task.priority),
+      task.dueDate ? this.formatDate(task.dueDate) : this.transliterate('Ne ukazan'),
+      task.estimatedHours || this.transliterate('Ne ukazano'),
     ]);
 
-    doc.autoTable({
-      head: [['Название', 'Проект', 'Статус', 'Приоритет', 'Дедлайн', 'Часов']],
+    autoTable(doc, {
+      head: [[this.transliterate('Nazvanie'), this.transliterate('Proekt'), this.transliterate('Status'), this.transliterate('Prioritet'), this.transliterate('Dedlayn'), this.transliterate('Chasov')]],
       body: tableData,
       startY: options.includeDate ? 40 : 30,
       styles: { fontSize: 8 },
@@ -109,25 +115,27 @@ export class DataExporter {
   exportPaymentsToPDF(payments: any[], options: ExportOptions): void {
     const doc = new jsPDF();
     
+    doc.setFont('helvetica');
+    
     doc.setFontSize(16);
-    doc.text(options.title, 20, 20);
+    doc.text(this.transliterate(options.title), 20, 20);
     
     if (options.includeDate) {
       doc.setFontSize(10);
-      doc.text(`Дата создания: ${this.formatDateTime(new Date())}`, 20, 30);
+      doc.text(this.transliterate(`Data sozdaniya: ${this.formatDateTime(new Date())}`), 20, 30);
     }
 
     const tableData = payments.map(payment => [
-      payment.description,
-      payment.project?.title || 'Без проекта',
+      this.transliterate(payment.description),
+      this.transliterate(payment.project?.title || 'Bez proekta'),
       this.formatCurrency(payment.amount),
       payment.currency,
-      payment.status,
-      payment.dueDate ? this.formatDate(payment.dueDate) : 'Не указан',
+      this.transliterate(payment.status),
+      payment.dueDate ? this.formatDate(payment.dueDate) : this.transliterate('Ne ukazan'),
     ]);
 
-    doc.autoTable({
-      head: [['Описание', 'Проект', 'Сумма', 'Валюта', 'Статус', 'Дата']],
+    autoTable(doc, {
+      head: [[this.transliterate('Opisanie'), this.transliterate('Proekt'), this.transliterate('Summa'), this.transliterate('Valyuta'), this.transliterate('Status'), this.transliterate('Data')]],
       body: tableData,
       startY: options.includeDate ? 40 : 30,
       styles: { fontSize: 8 },
@@ -221,34 +229,35 @@ export class DataExporter {
   // Combined export methods
   exportAllDataToPDF(data: ExportData, options: ExportOptions): void {
     const doc = new jsPDF();
+    doc.setFont('helvetica');
     let currentY = 20;
 
     // Title
     doc.setFontSize(16);
-    doc.text(options.title, 20, currentY);
+    doc.text(this.transliterate(options.title), 20, currentY);
     currentY += 10;
 
     if (options.includeDate) {
       doc.setFontSize(10);
-      doc.text(`Дата создания: ${this.formatDateTime(new Date())}`, 20, currentY);
+      doc.text(this.transliterate(`Data sozdaniya: ${this.formatDateTime(new Date())}`), 20, currentY);
       currentY += 15;
     }
 
     // Projects
     if (data.projects && data.projects.length > 0) {
       doc.setFontSize(12);
-      doc.text('Проекты', 20, currentY);
+      doc.text(this.transliterate('Proekty'), 20, currentY);
       currentY += 5;
 
       const projectData = data.projects.map(project => [
-        project.title,
-        project.client?.name || 'Без клиента',
-        project.status,
-        project.budget ? this.formatCurrency(project.budget) : 'Не указан',
+        this.transliterate(project.title),
+        this.transliterate(project.client?.name || 'Bez klienta'),
+        this.transliterate(project.status),
+        project.budget ? this.formatCurrency(project.budget) : this.transliterate('Ne ukazan'),
       ]);
 
-      doc.autoTable({
-        head: [['Название', 'Клиент', 'Статус', 'Бюджет']],
+      autoTable(doc, {
+        head: [[this.transliterate('Nazvanie'), this.transliterate('Klient'), this.transliterate('Status'), this.transliterate('Byudzhet')]],
         body: projectData,
         startY: currentY,
         styles: { fontSize: 7 },
@@ -260,28 +269,95 @@ export class DataExporter {
 
     // Tasks
     if (data.tasks && data.tasks.length > 0) {
-      if (currentY > 250) {
-        doc.addPage();
-        currentY = 20;
-      }
-
       doc.setFontSize(12);
-      doc.text('Задачи', 20, currentY);
+      doc.text(this.transliterate('Zadachi'), 20, currentY);
       currentY += 5;
 
       const taskData = data.tasks.slice(0, 10).map(task => [
-        task.title,
-        task.project?.title || 'Без проекта',
-        task.status,
-        task.priority,
+        this.transliterate(task.title),
+        this.transliterate(task.project?.title || 'Bez proekta'),
+        this.transliterate(task.status),
+        this.transliterate(task.priority),
       ]);
 
-      doc.autoTable({
-        head: [['Название', 'Проект', 'Статус', 'Приоритет']],
+      autoTable(doc, {
+        head: [[this.transliterate('Nazvanie'), this.transliterate('Proekt'), this.transliterate('Status'), this.transliterate('Prioritet')]],
         body: taskData,
         startY: currentY,
         styles: { fontSize: 7 },
         headStyles: { fillColor: [34, 197, 94] },
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // Clients
+    if (data.clients && data.clients.length > 0) {
+      doc.setFontSize(12);
+      doc.text(this.transliterate('Klienty'), 20, currentY);
+      currentY += 5;
+
+      const clientData = data.clients.map(client => [
+        this.transliterate(client.name),
+        this.transliterate(client.email || 'Ne ukazan'),
+        this.transliterate(client.phone || 'Ne ukazan'),
+        this.transliterate(client.company || 'Ne ukazana'),
+      ]);
+
+      autoTable(doc, {
+        head: [[this.transliterate('Imya'), this.transliterate('Email'), this.transliterate('Telefon'), this.transliterate('Kompaniya')]],
+        body: clientData,
+        startY: currentY,
+        styles: { fontSize: 7 },
+        headStyles: { fillColor: [168, 85, 247] },
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // Payments
+    if (data.payments && data.payments.length > 0) {
+      doc.setFontSize(12);
+      doc.text(this.transliterate('Platezhi'), 20, currentY);
+      currentY += 5;
+
+      const paymentData = data.payments.slice(0, 10).map(payment => [
+        this.transliterate(payment.description),
+        this.transliterate(payment.project?.title || 'Bez proekta'),
+        this.formatCurrency(payment.amount),
+        this.transliterate(payment.status),
+      ]);
+
+      autoTable(doc, {
+        head: [[this.transliterate('Opisanie'), this.transliterate('Proekt'), this.transliterate('Summa'), this.transliterate('Status')]],
+        body: paymentData,
+        startY: currentY,
+        styles: { fontSize: 7 },
+        headStyles: { fillColor: [245, 158, 11] },
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // Reminders
+    if (data.reminders && data.reminders.length > 0) {
+      doc.setFontSize(12);
+      doc.text(this.transliterate('Napominaniya'), 20, currentY);
+      currentY += 5;
+
+      const reminderData = data.reminders.slice(0, 10).map(reminder => [
+        this.transliterate(reminder.title),
+        this.transliterate(reminder.message || 'Net soobscheniya'),
+        this.formatDateTime(reminder.scheduledAt),
+        reminder.sent ? this.transliterate('Da') : this.transliterate('Net'),
+      ]);
+
+      autoTable(doc, {
+        head: [[this.transliterate('Zagolovok'), this.transliterate('Soobschenie'), this.transliterate('Zaplanirovan na'), this.transliterate('Otpravlen')]],
+        body: reminderData,
+        startY: currentY,
+        styles: { fontSize: 7 },
+        headStyles: { fillColor: [239, 68, 68] },
       });
     }
 

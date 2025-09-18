@@ -28,6 +28,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [clientId, setClientId] = useState<string>('');
+  const [payments, setPayments] = useState<any[]>([]);
 
   useEffect(() => {
     const initializeClient = async () => {
@@ -44,6 +45,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       if (response.ok) {
         const data = await response.json();
         setClient(data.client);
+        fetchClientPayments(id);
       } else if (response.status === 404) {
         router.push('/clients');
       }
@@ -51,6 +53,21 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       console.error('Error fetching client:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchClientPayments = async (clientId: string) => {
+    try {
+      const response = await fetch('/api/payments');
+      if (response.ok) {
+        const data = await response.json();
+        const clientPayments = data.payments.filter((p: any) => 
+          p.project?.clientId === clientId
+        );
+        setPayments(clientPayments);
+      }
+    } catch (error) {
+      console.error('Error fetching payments:', error);
     }
   };
 
@@ -79,16 +96,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     }
   };
 
-  const formatDate = (date: Date | string) => {
-    return new Date(date).toLocaleDateString('ru-RU');
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-    }).format(amount);
-  };
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -149,7 +156,38 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const totalProjects = client.projects?.length || 0;
   const activeProjects = client.projects?.filter(p => p.status === 'ACTIVE').length || 0;
   const completedProjects = client.projects?.filter(p => p.status === 'COMPLETED').length || 0;
-  const totalBudget = client.projects?.reduce((sum, p) => sum + (p.budget || 0), 0) || 0;
+  const totalBudget = client.projects?.reduce((sum, p) => sum + Number(p.budget || 0), 0) || 0;
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+    }).format(amount);
+  };
+
+  const formatDate = (date: Date | string) => {
+    return new Date(date).toLocaleDateString('ru-RU');
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      PENDING: 'bg-yellow-100 text-yellow-800',
+      PAID: 'bg-green-100 text-green-800',
+      OVERDUE: 'bg-red-100 text-red-800',
+      CANCELLED: 'bg-gray-100 text-gray-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getPaymentStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      PENDING: 'Ожидает оплаты',
+      PAID: 'Оплачено',
+      OVERDUE: 'Просрочено',
+      CANCELLED: 'Отменено',
+    };
+    return labels[status] || status;
+  };
 
   return (
     <div className="container mx-auto p-6">
@@ -242,60 +280,29 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Всего проектов</p>
-                <p className="text-2xl font-bold">{totalProjects}</p>
-              </div>
-              <FileText className="w-8 h-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Активных</p>
-                <p className="text-2xl font-bold text-green-600">{activeProjects}</p>
-              </div>
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Завершенных</p>
-                <p className="text-2xl font-bold text-blue-600">{completedProjects}</p>
-              </div>
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Общий бюджет</p>
-                <p className="text-2xl font-bold">{formatCurrency(totalBudget)}</p>
-              </div>
-              <DollarSign className="w-8 h-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-primary">{totalProjects}</div>
+          <div className="text-sm text-muted-foreground">Всего проектов</div>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-green-600">{activeProjects}</div>
+          <div className="text-sm text-muted-foreground">Активных</div>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-blue-600">{completedProjects}</div>
+          <div className="text-sm text-muted-foreground">Завершенных</div>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-purple-600">{formatCurrency(totalBudget)}</div>
+          <div className="text-sm text-muted-foreground">Общий бюджет</div>
+        </div>
       </div>
 
-      {/* Projects */}
+      {/* Projects and Payments */}
       <Tabs defaultValue="projects" className="space-y-4">
         <TabsList>
           <TabsTrigger value="projects">Проекты ({totalProjects})</TabsTrigger>
+          <TabsTrigger value="payments">Платежи ({payments.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="projects">
@@ -359,6 +366,63 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                         </CardContent>
                       </Card>
                     </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="payments">
+          <Card>
+            <CardHeader>
+              <CardTitle>История платежей</CardTitle>
+              <CardDescription>
+                Все платежи по проектам этого клиента
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {payments.length === 0 ? (
+                <div className="text-center py-8">
+                  <DollarSign className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Нет платежей</h3>
+                  <p className="text-muted-foreground">
+                    У этого клиента пока нет платежей
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {payments.map((payment) => (
+                    <div key={payment.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-medium">{payment.description || 'Платеж'}</h4>
+                          {payment.project && (
+                            <p className="text-sm text-muted-foreground">
+                              Проект: {payment.project.title}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold">
+                            {formatCurrency(Number(payment.amount || 0))}
+                          </div>
+                          <Badge className={getPaymentStatusColor(payment.status)}>
+                            {getPaymentStatusLabel(payment.status)}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center text-sm text-muted-foreground">
+                        <span>
+                          Создан: {formatDate(payment.createdAt)}
+                        </span>
+                        {payment.dueDate && (
+                          <span>
+                            Срок: {formatDate(payment.dueDate)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}

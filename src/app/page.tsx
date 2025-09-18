@@ -24,12 +24,20 @@ import { ExportManager } from '@/components/export';
 export default function Dashboard() {
   const [user, setUser] = useState<{firstName?: string; lastName?: string; username?: string} | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    projects: { count: 0, weeklyChange: 0 },
+    tasks: { count: 0, completedToday: 0 },
+    clients: { count: 0, newClients: 0 },
+    revenue: { amount: 0, monthlyChange: 0 }
+  });
 
   useEffect(() => {
     // Initialize Telegram WebApp
     const userData = telegramWebApp.getUserData();
     setUser(userData);
-    setIsLoading(false);
+    
+    // Fetch dashboard statistics
+    fetchDashboardStats();
 
     // Setup haptic feedback for interactions
     const handleClick = () => telegramWebApp.hapticFeedback('light');
@@ -39,6 +47,91 @@ export default function Dashboard() {
       document.removeEventListener('click', handleClick);
     };
   }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      const [projectsRes, tasksRes, clientsRes, paymentsRes] = await Promise.all([
+        fetch('/api/projects'),
+        fetch('/api/tasks'),
+        fetch('/api/clients'),
+        fetch('/api/payments')
+      ]);
+
+      const [projectsData, tasksData, clientsData, paymentsData] = await Promise.all([
+        projectsRes.ok ? projectsRes.json() : { projects: [] },
+        tasksRes.ok ? tasksRes.json() : { tasks: [] },
+        clientsRes.ok ? clientsRes.json() : { clients: [] },
+        paymentsRes.ok ? paymentsRes.json() : { payments: [] }
+      ]);
+
+      const projects = projectsData.projects || [];
+      const tasks = tasksData.tasks || [];
+      const clients = clientsData.clients || [];
+      const payments = paymentsData.payments || [];
+
+      // Calculate weekly project change
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const newProjectsThisWeek = projects.filter((p: any) => new Date(p.createdAt) > weekAgo).length;
+
+      // Calculate tasks completed today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const completedToday = tasks.filter((t: any) => 
+        t.status === 'DONE' && 
+        t.updatedAt && 
+        new Date(t.updatedAt) >= today
+      ).length;
+
+      // Calculate new clients this month
+      const monthAgo = new Date();
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      const newClientsThisMonth = clients.filter((c: any) => new Date(c.createdAt) > monthAgo).length;
+
+      // Calculate revenue
+      const paidPayments = payments.filter((p: any) => p.status === 'PAID');
+      const totalRevenue = paidPayments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+      
+      // Calculate monthly revenue change
+      const thisMonth = new Date();
+      thisMonth.setDate(1);
+      const lastMonth = new Date(thisMonth);
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      
+      const thisMonthRevenue = paidPayments
+        .filter((p: any) => new Date(p.paidAt || p.createdAt) >= thisMonth)
+        .reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+      
+      const lastMonthRevenue = paidPayments
+        .filter((p: any) => {
+          const date = new Date(p.paidAt || p.createdAt);
+          return date >= lastMonth && date < thisMonth;
+        })
+        .reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+
+      const monthlyChange = lastMonthRevenue > 0 
+        ? Math.round(((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
+        : 0;
+
+      setStats({
+        projects: { count: projects.length, weeklyChange: newProjectsThisWeek },
+        tasks: { count: tasks.length, completedToday },
+        clients: { count: clients.length, newClients: newClientsThisMonth },
+        revenue: { amount: totalRevenue, monthlyChange }
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+    }).format(amount);
+  };
 
   if (isLoading) {
     return (
@@ -69,9 +162,9 @@ export default function Dashboard() {
             <Briefcase className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">{stats.projects.count}</div>
             <p className="text-xs text-muted-foreground">
-              +1 за эту неделю
+              +{stats.projects.weeklyChange} за эту неделю
             </p>
           </CardContent>
         </Card>
@@ -82,9 +175,9 @@ export default function Dashboard() {
             <CheckSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{stats.tasks.count}</div>
             <p className="text-xs text-muted-foreground">
-              5 выполнено сегодня
+              {stats.tasks.completedToday} выполнено сегодня
             </p>
           </CardContent>
         </Card>
@@ -95,9 +188,9 @@ export default function Dashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{stats.clients.count}</div>
             <p className="text-xs text-muted-foreground">
-              2 новых клиента
+              {stats.clients.newClients} новых клиентов
             </p>
           </CardContent>
         </Card>
@@ -108,9 +201,9 @@ export default function Dashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₽45,000</div>
+            <div className="text-2xl font-bold">{formatCurrency(stats.revenue.amount)}</div>
             <p className="text-xs text-muted-foreground">
-              +12% к прошлому месяцу
+              {stats.revenue.monthlyChange > 0 ? '+' : ''}{stats.revenue.monthlyChange}% к прошлому месяцу
             </p>
           </CardContent>
         </Card>

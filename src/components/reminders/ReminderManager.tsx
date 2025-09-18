@@ -315,7 +315,7 @@ export function ReminderManager({ showUpcomingOnly = false }: ReminderManagerPro
                         <SelectValue placeholder="Выберите проект" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Без проекта</SelectItem>
+                        <SelectItem value="none">Без проекта</SelectItem>
                         {projects.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
                             {project.title}
@@ -335,7 +335,7 @@ export function ReminderManager({ showUpcomingOnly = false }: ReminderManagerPro
                         <SelectValue placeholder="Выберите задачу" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Без задачи</SelectItem>
+                        <SelectItem value="none">Без задачи</SelectItem>
                         {tasks.map((task) => (
                           <SelectItem key={task.id} value={task.id}>
                             {task.title}

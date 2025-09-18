@@ -98,10 +98,16 @@ export default function PaymentsPage() {
   };
 
   // Calculate statistics
-  const totalAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
-  const paidAmount = payments.filter(p => p.status === 'PAID').reduce((sum, payment) => sum + payment.amount, 0);
-  const pendingAmount = payments.filter(p => p.status === 'PENDING').reduce((sum, payment) => sum + payment.amount, 0);
-  const overdueAmount = payments.filter(p => p.status === 'OVERDUE').reduce((sum, payment) => sum + payment.amount, 0);
+  const totalAmount = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const paidAmount = payments
+    .filter(p => p.status === 'PAID')
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const pendingAmount = payments
+    .filter(p => p.status === 'PENDING')
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const overdueAmount = payments
+    .filter(p => p.status === 'OVERDUE' || (p.status === 'PENDING' && p.dueDate && isOverdue(p.dueDate)))
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
 
   if (loading) {
     return (

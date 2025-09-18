@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react';
 import {
   DndContext,
   DragEndEvent,
-  DragOverlay,
   DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
   closestCorners,
+  useDroppable,
+  DragOverlay,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -75,6 +76,17 @@ const statusConfig = {
     color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
     borderColor: 'border-green-200 dark:border-green-700'
   }
+};
+
+// Droppable component
+const Droppable = ({ children, id }: { children: React.ReactNode; id: string }) => {
+  const { setNodeRef } = useDroppable({ id });
+  
+  return (
+    <div ref={setNodeRef}>
+      {children}
+    </div>
+  );
 };
 
 export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
@@ -227,21 +239,23 @@ export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
                   items={statusTasks.map(task => task.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div 
-                    className="min-h-[200px] space-y-3"
-                    data-status={status}
-                  >
-                    {statusTasks.map((task) => (
-                      <TaskCard key={task.id} task={task} />
-                    ))}
-                    
-                    {statusTasks.length === 0 && (
-                      <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
-                        <Icon className="w-8 h-8 mb-2 opacity-50" />
-                        <p className="text-sm">Нет задач</p>
-                      </div>
-                    )}
-                  </div>
+                  <Droppable id={status}>
+                    <div 
+                      className="min-h-[200px] space-y-3"
+                      data-status={status}
+                    >
+                      {statusTasks.map((task) => (
+                        <TaskCard key={task.id} task={task} />
+                      ))}
+                      
+                      {statusTasks.length === 0 && (
+                        <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+                          <Icon className="w-8 h-8 mb-2 opacity-50" />
+                          <p className="text-sm">Нет задач</p>
+                        </div>
+                      )}
+                    </div>
+                  </Droppable>
                 </SortableContext>
                 
                 <div className="mt-4 pt-3 border-t">

@@ -38,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className="dark">
+    <html lang="ru" className="dark" style={{"--tg-viewport-height":"100vh","--tg-viewport-stable-height":"100vh"}}>
       <head>
         <script src="https://telegram.org/js/telegram-web-app.js" async></script>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />

@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Edit, Trash2, Plus, Calendar, Clock, User, Briefcase, Play, Pause, Square } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Plus, Calendar, Clock, User, Briefcase, Play, Pause, Square, X } from 'lucide-react';
 import Link from 'next/link';
 import { Task } from '@/types';
 
@@ -49,6 +51,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     startTime: null as Date | null,
     elapsedTime: 0,
   });
+  const [timeHistory, setTimeHistory] = useState<any[]>([]);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [currentComment, setCurrentComment] = useState('');
 
   useEffect(() => {
     const initializeTask = async () => {
@@ -132,9 +137,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   const handleTimeTracking = () => {
     if (timeTracking.isTracking) {
-      // Stop tracking and save time
+      // Stop tracking and show comment modal
       if (timeTracking.elapsedTime > 0) {
-        saveTimeSession();
+        setShowCommentModal(true);
       }
       setTimeTracking(prev => ({ ...prev, isTracking: false }));
     } else {
@@ -146,8 +151,18 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     }
   };
 
-  const saveTimeSession = async () => {
+  const saveTimeSession = async (comment: string = '') => {
     if (!task || timeTracking.elapsedTime === 0) return;
+
+    const sessionData = {
+      startTime: timeTracking.startTime,
+      endTime: new Date(),
+      duration: timeTracking.elapsedTime,
+      comment: comment.trim(),
+    };
+
+    // Add to history
+    setTimeHistory(prev => [...prev, sessionData]);
 
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
@@ -168,6 +183,35 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     } catch (error) {
       console.error('Error saving time:', error);
     }
+  };
+
+  const handleCommentSubmit = () => {
+    saveTimeSession(currentComment);
+    setShowCommentModal(false);
+    setCurrentComment('');
+  };
+
+  const getTimeHistoryByPeriod = (period: '24h' | '7d' | 'all') => {
+    const now = new Date();
+    const cutoff = new Date();
+    
+    switch (period) {
+      case '24h':
+        cutoff.setHours(cutoff.getHours() - 24);
+        break;
+      case '7d':
+        cutoff.setDate(cutoff.getDate() - 7);
+        break;
+      case 'all':
+      default:
+        return timeHistory;
+    }
+    
+    return timeHistory.filter(session => new Date(session.startTime) >= cutoff);
+  };
+
+  const getTotalTimeForPeriod = (period: '24h' | '7d' | 'all') => {
+    return getTimeHistoryByPeriod(period).reduce((total, session) => total + session.duration, 0);
   };
 
   const formatTime = (seconds: number) => {
@@ -338,11 +382,77 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               )}
             </Button>
             {timeTracking.elapsedTime > 0 && !timeTracking.isTracking && (
-              <Button onClick={saveTimeSession} variant="outline">
+              <Button onClick={() => saveTimeSession()} variant="outline">
                 Сохранить время
               </Button>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Time History */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">История трекинга времени</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="24h" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="24h">За 24 часа</TabsTrigger>
+              <TabsTrigger value="7d">За 7 дней</TabsTrigger>
+              <TabsTrigger value="all">За все время</TabsTrigger>
+            </TabsList>
+            
+            {['24h', '7d', 'all'].map((period) => (
+              <TabsContent key={period} value={period} className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">
+                    Итоговое время: {formatTime(getTotalTimeForPeriod(period as '24h' | '7d' | 'all'))}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    Сессий: {getTimeHistoryByPeriod(period as '24h' | '7d' | 'all').length}
+                  </span>
+                </div>
+                
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {getTimeHistoryByPeriod(period as '24h' | '7d' | 'all').length === 0 ? (
+                    <p className="text-center text-muted-foreground py-4">
+                      Нет записей за этот период
+                    </p>
+                  ) : (
+                    getTimeHistoryByPeriod(period as '24h' | '7d' | 'all')
+                      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+                      .map((session, index) => (
+                        <div key={index} className="border rounded-lg p-3 space-y-2">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="font-medium">Старт:</span>
+                                <span>{new Date(session.startTime).toLocaleString('ru-RU')}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="font-medium">Стоп:</span>
+                                <span>{new Date(session.endTime).toLocaleString('ru-RU')}</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-medium">
+                                Время: {formatTime(session.duration)}
+                              </div>
+                            </div>
+                          </div>
+                          {session.comment && (
+                            <div className="text-sm text-muted-foreground">
+                              <span className="font-medium">Комментарий:</span> {session.comment}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                  )}
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
         </CardContent>
       </Card>
 
@@ -435,6 +545,54 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Comment Modal */}
+      {showCommentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Добавить комментарий</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowCommentModal(false);
+                  setCurrentComment('');
+                }}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Время сессии: {formatTime(timeTracking.elapsedTime)}
+                </p>
+                <Textarea
+                  placeholder="Опишите, что было сделано (необязательно)..."
+                  value={currentComment}
+                  onChange={(e) => setCurrentComment(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowCommentModal(false);
+                    setCurrentComment('');
+                  }}
+                >
+                  Отмена
+                </Button>
+                <Button onClick={handleCommentSubmit}>
+                  Сохранить
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

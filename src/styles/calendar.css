@@ -28,7 +28,7 @@
 .rbc-date-cell button {
   color: hsl(var(--foreground)) !important;
   background: transparent !important;
-  border: none !important;
+  border: none;
   padding: 4px 8px !important;
   border-radius: 4px !important;
   transition: background-color 0.2s !important;
@@ -61,9 +61,9 @@
 }
 
 .rbc-event {
-  background-color: hsl(var(--primary)) !important;
-  color: hsl(var(--primary-foreground)) !important;
-  border: none !important;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
   border-radius: 4px !important;
   padding: 2px 6px !important;
   font-size: 12px !important;
@@ -78,7 +78,7 @@
 }
 
 .rbc-event-label {
-  color: hsl(var(--primary-foreground)) !important;
+  color: hsl(var(--primary-foreground));
 }
 
 .rbc-event-continues-after,
@@ -131,8 +131,8 @@
 }
 
 .rbc-toolbar button.rbc-active {
-  background-color: hsl(var(--primary)) !important;
-  color: hsl(var(--primary-foreground)) !important;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
   border-color: hsl(var(--primary)) !important;
 }
 
@@ -144,7 +144,7 @@
 }
 
 .rbc-btn-group {
-  display: inline-flex !important;
+  display: none!important;
   border-radius: 6px !important;
   overflow: hidden !important;
 }
@@ -186,6 +186,49 @@
 
 .rbc-timeslot-group {
   border-bottom: 1px solid hsl(var(--border)) !important;
+}
+
+/* Event styling for all views */
+.rbc-event {
+  border-radius: 4px !important;
+  border: 1px solid;
+  padding: 2px 6px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.rbc-event:hover {
+  opacity: 0.8 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.rbc-event-content {
+  font-weight: 500 !important;
+}
+
+/* Month view events */
+.rbc-month-view .rbc-event {
+  border-radius: 3px !important;
+  padding: 1px 4px !important;
+  font-size: 11px !important;
+  margin: 1px 0 !important;
+}
+
+/* Week and day view events */
+.rbc-time-view .rbc-event {
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  font-size: 12px !important;
+  margin: 1px !important;
+}
+
+/* Agenda view events */
+.rbc-agenda-view .rbc-event {
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+  font-size: 13px !important;
 }
 
 .rbc-current-time-indicator {
@@ -232,6 +275,6 @@
 }
 
 .rbc-event:hover {
-  transform: scale(1.02) !important;
+  /* transform: scale(1.02) !important; */
   z-index: 10 !important;
 }

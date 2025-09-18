@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
+import { Calendar, momentLocalizer, View } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/ru';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -9,12 +9,15 @@ import '@/styles/calendar.css';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { 
   Calendar as CalendarIcon,
   Clock,
   AlertTriangle,
   CheckCircle,
-  Plus
+  Plus,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -44,6 +47,7 @@ interface CalendarEvent {
   start: Date;
   end: Date;
   resource: Task;
+  color: string;
 }
 
 const statusColors = {
@@ -62,11 +66,16 @@ const priorityColors = {
 
 export default function CalendarPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setView] = useState<View>('month');
+  const [isYearView, setIsYearView] = useState(false);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [view, setView] = useState<'month' | 'week' | 'day'>('month');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [selectedTaskForModal, setSelectedTaskForModal] = useState<Task | null>(null);
 
   useEffect(() => {
     fetchTasks();
@@ -88,7 +97,8 @@ export default function CalendarPage() {
           title: `${task.title}${task.project ? ` (${task.project.title})` : ''}`,
           start: date,
           end: new Date(date.getTime() + 60 * 60 * 1000), // 1 час
-          resource: task
+          resource: task,
+          color: priorityColors[task.priority]
         };
       });
     
@@ -214,27 +224,16 @@ export default function CalendarPage() {
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Календарь дедлайнов</h1>
+          <h1 className="text-3xl font-bold">Календарь</h1>
           <p className="text-muted-foreground">
-            Обзор сроков выполнения задач и проектов
+            Планирование задач и дедлайнов
           </p>
         </div>
-        <div className="flex gap-3">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 border border-input bg-background rounded-md text-sm"
-          >
-            <option value="all">Все статусы</option>
-            <option value="TODO">К выполнению</option>
-            <option value="IN_PROGRESS">В работе</option>
-            <option value="REVIEW">На проверке</option>
-            <option value="DONE">Выполнено</option>
-          </select>
+        <div className="flex gap-2">
           <Link href="/tasks/new">
             <Button>
               <Plus className="w-4 h-4 mr-2" />
-              Новая задача
+              Добавить задачу
             </Button>
           </Link>
         </div>
@@ -308,57 +307,182 @@ export default function CalendarPage() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Календарь</CardTitle>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   <Button
-                    variant={view === 'month' ? 'default' : 'outline'}
+                    variant={view === 'month' && !isYearView ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setView('month')}
+                    onClick={() => {
+                      setView('month');
+                      setIsYearView(false);
+                    }}
                   >
                     Месяц
                   </Button>
                   <Button
                     variant={view === 'week' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setView('week')}
+                    onClick={() => {
+                      setView('week');
+                      setIsYearView(false);
+                    }}
                   >
                     Неделя
                   </Button>
                   <Button
                     variant={view === 'day' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setView('day')}
+                    onClick={() => {
+                      setView('day');
+                      setIsYearView(false);
+                    }}
                   >
                     День
+                  </Button>
+                  <Button
+                    variant={isYearView ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setIsYearView(true)}
+                  >
+                    Год
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newDate = new Date(currentDate);
+                      if (isYearView) {
+                        newDate.setFullYear(newDate.getFullYear() - 1);
+                      } else if (view === 'month') {
+                        newDate.setMonth(newDate.getMonth() - 1);
+                      } else if (view === 'week') {
+                        newDate.setDate(newDate.getDate() - 7);
+                      } else if (view === 'day') {
+                        newDate.setDate(newDate.getDate() - 1);
+                      }
+                      setCurrentDate(newDate);
+                    }}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentDate(new Date())}
+                  >
+                    Сегодня
+                  </Button>
+                  <span className="text-sm font-medium min-w-[120px] text-center">
+                    {isYearView 
+                      ? moment(currentDate).format('YYYY')
+                      : view === 'month' 
+                        ? moment(currentDate).format('MMMM YYYY')
+                        : view === 'week'
+                          ? `${moment(currentDate).startOf('week').format('DD MMM')} - ${moment(currentDate).endOf('week').format('DD MMM YYYY')}`
+                          : moment(currentDate).format('DD MMMM YYYY')
+                    }
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newDate = new Date(currentDate);
+                      if (isYearView) {
+                        newDate.setFullYear(newDate.getFullYear() + 1);
+                      } else if (view === 'month') {
+                        newDate.setMonth(newDate.getMonth() + 1);
+                      } else if (view === 'week') {
+                        newDate.setDate(newDate.getDate() + 7);
+                      } else if (view === 'day') {
+                        newDate.setDate(newDate.getDate() + 1);
+                      }
+                      setCurrentDate(newDate);
+                    }}
+                  >
+                    <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div style={{ height: '600px' }}>
-                <Calendar
-                  localizer={localizer}
-                  events={events}
-                  startAccessor="start"
-                  endAccessor="end"
-                  view={view}
-                  onView={setView}
-                  onSelectEvent={handleSelectEvent}
-                  eventPropGetter={getEventStyle}
-                  messages={{
-                    next: 'Далее',
-                    previous: 'Назад',
-                    today: 'Сегодня',
-                    month: 'Месяц',
-                    week: 'Неделя',
-                    day: 'День',
-                    agenda: 'Повестка',
-                    date: 'Дата',
-                    time: 'Время',
-                    event: 'Событие',
-                    noEventsInRange: 'Нет событий в этом диапазоне',
-                    showMore: (total: number) => `+ еще ${total}`
-                  }}
-                />
+                {!isYearView ? (
+                  <Calendar
+                    localizer={localizer}
+                    events={events}
+                    startAccessor="start"
+                    endAccessor="end"
+                    style={{ height: 600 }}
+                    view={view}
+                    onView={setView}
+                    date={currentDate}
+                    onNavigate={setCurrentDate}
+                    eventPropGetter={(event) => ({
+                      style: {
+                        backgroundColor: event.color + '20', // 20 = 0.125 opacity in hex
+                        borderColor: event.color + '20',
+                        color: event.color,
+                      },
+                    })}
+                    onSelectEvent={(event) => {
+                      setSelectedTaskForModal(event.resource);
+                      setIsTaskModalOpen(true);
+                    }}
+                    messages={{
+                      next: 'Следующий',
+                      previous: 'Предыдущий',
+                      today: 'Сегодня',
+                      month: 'Месяц',
+                      week: 'Неделя',
+                      day: 'День',
+                      agenda: 'Повестка',
+                      date: 'Дата',
+                      time: 'Время',
+                      event: 'Событие',
+                      noEventsInRange: 'Нет событий в этом диапазоне',
+                    }}
+                  />
+                ) : (
+                  <div className="grid grid-cols-3 gap-4">
+                    {Array.from({ length: 12 }, (_, i) => {
+                      const monthDate = new Date(currentDate.getFullYear(), i, 1);
+                      const monthEvents = events.filter(event => {
+                        const eventDate = new Date(event.start);
+                        return eventDate.getFullYear() === currentDate.getFullYear() && 
+                               eventDate.getMonth() === i;
+                      });
+                      
+                      return (
+                        <div key={i} className="border rounded-lg p-4">
+                          <h3 className="font-semibold mb-2">
+                            {moment(monthDate).format('MMMM')}
+                          </h3>
+                          <div className="space-y-1">
+                            {monthEvents.slice(0, 3).map((event, idx) => (
+                              <div 
+                                key={idx}
+                                className="text-xs p-1 rounded cursor-pointer hover:bg-opacity-80 transition-colors"
+                                style={{ backgroundColor: event.color + '20', color: event.color }}
+                                onClick={() => {
+                                  setSelectedTaskForModal(event.resource);
+                                  setIsTaskModalOpen(true);
+                                }}
+                              >
+                                {event.title}
+                              </div>
+                            ))}
+                            {monthEvents.length > 3 && (
+                              <div className="text-xs text-muted-foreground">
+                                +{monthEvents.length - 3} еще
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -382,7 +506,10 @@ export default function CalendarPage() {
                   </p>
                 ) : (
                   getUpcomingTasks().slice(0, 5).map((task) => (
-                    <div key={task.id} className="border rounded-lg p-3">
+                    <div key={task.id} className="border rounded-lg p-3 cursor-pointer" onClick={() => {
+                      setSelectedTaskForModal(task);
+                      setIsTaskModalOpen(true);
+                    }}>
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-medium text-sm">{task.title}</h4>
                         {getPriorityBadge(task.priority)}
@@ -417,7 +544,14 @@ export default function CalendarPage() {
               <CardContent>
                 <div className="space-y-3">
                   {getOverdueTasks().slice(0, 5).map((task) => (
-                    <div key={task.id} className="border border-red-500/30 rounded-lg p-3 bg-red-500/10 dark:bg-red-500/20">
+                    <div 
+                      key={task.id} 
+                      className="border border-red-500/30 rounded-lg p-3 bg-red-500/10 dark:bg-red-500/20 cursor-pointer hover:bg-red-500/20 transition-colors"
+                      onClick={() => {
+                        setSelectedTaskForModal(task);
+                        setIsTaskModalOpen(true);
+                      }}
+                    >
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-medium text-sm text-foreground">{task.title}</h4>
                         {getPriorityBadge(task.priority)}
@@ -486,6 +620,83 @@ export default function CalendarPage() {
             </Card>
           )}
         </div>
+
+        {/* Task Details Modal */}
+        <Dialog open={isTaskModalOpen} onOpenChange={setIsTaskModalOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{selectedTaskForModal?.title}</DialogTitle>
+              <DialogDescription>
+                {selectedTaskForModal?.project?.title && (
+                  <span className="text-sm text-muted-foreground">
+                    Проект: {selectedTaskForModal.project.title}
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedTaskForModal && (
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Badge 
+                    className={
+                      selectedTaskForModal.status === 'DONE' ? 'bg-green-100 text-green-800' :
+                      selectedTaskForModal.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
+                      selectedTaskForModal.status === 'REVIEW' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }
+                  >
+                    {selectedTaskForModal.status === 'DONE' ? 'Выполнено' :
+                     selectedTaskForModal.status === 'IN_PROGRESS' ? 'В работе' :
+                     selectedTaskForModal.status === 'REVIEW' ? 'На проверке' : 'К выполнению'}
+                  </Badge>
+                  <Badge 
+                    className={
+                      selectedTaskForModal.priority === 'URGENT' ? 'bg-red-100 text-red-800' :
+                      selectedTaskForModal.priority === 'HIGH' ? 'bg-orange-100 text-orange-800' :
+                      selectedTaskForModal.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }
+                  >
+                    {selectedTaskForModal.priority === 'URGENT' ? 'Срочно' :
+                     selectedTaskForModal.priority === 'HIGH' ? 'Высокий' :
+                     selectedTaskForModal.priority === 'MEDIUM' ? 'Средний' : 'Низкий'}
+                  </Badge>
+                </div>
+
+                {selectedTaskForModal.description && (
+                  <div>
+                    <h4 className="font-medium mb-2">Описание</h4>
+                    <p className="text-sm text-muted-foreground">{selectedTaskForModal.description}</p>
+                  </div>
+                )}
+
+                {(selectedTaskForModal.deadline || selectedTaskForModal.dueDate) && (
+                  <div>
+                    <h4 className="font-medium mb-2">Дедлайн</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {moment(selectedTaskForModal.deadline || selectedTaskForModal.dueDate).format('DD.MM.YYYY HH:mm')}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-4">
+                  <Link href={`/tasks/${selectedTaskForModal.id}`} className="flex-1">
+                    <Button className="w-full">
+                      Открыть задачу
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsTaskModalOpen(false)}
+                  >
+                    Закрыть
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

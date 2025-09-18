@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -16,7 +16,7 @@ import {
   ArrowUpRight,
   ArrowLeft
 } from 'lucide-react';
-import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { Project, Payment } from '@/types';
 import { ExportManager } from '@/components/export';
 import {
@@ -281,7 +281,11 @@ export default function AnalyticsPage() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, value, payload }: any) => {
+                        const total = analytics.summary.paid + analytics.summary.pending + analytics.summary.overdue;
+                        const percent = total > 0 ? (value / total) * 100 : 0;
+                        return `${name} ${percent.toFixed(0)}%`;
+                      }}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
@@ -334,12 +338,13 @@ export default function AnalyticsPage() {
                     <Tooltip 
                       formatter={(value: number, name: string) => [
                         formatCurrency(Number(value)), 
-                        name === 'paid' ? 'Получено' : name === 'pending' ? 'Ожидается' : 'Общая сумма'
+                        name === 'paid' ? 'Получено' : name === 'pending' ? 'Ожидается' : name === 'overdue' ? 'Просрочено' : 'Общая сумма'
                       ]}
                     />
                     <Area type="monotone" dataKey="total" stackId="1" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
                     <Area type="monotone" dataKey="paid" stackId="2" stroke="#22c55e" fill="#22c55e" fillOpacity={0.6} />
                     <Area type="monotone" dataKey="pending" stackId="3" stroke="#eab308" fill="#eab308" fillOpacity={0.6} />
+                    <Area type="monotone" dataKey="overdue" stackId="4" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -361,31 +366,37 @@ export default function AnalyticsPage() {
                     .sort((a, b) => b.total - a.total)
                     .slice(0, 10)
                     .map((project) => (
-                    <div key={project.id || 'no-project'} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h4 className="font-medium">{project.title}</h4>
-                          {project.client && (
-                            <p className="text-sm text-muted-foreground">{project.client}</p>
-                          )}
+                    <Link 
+                      key={project.id || 'no-project'} 
+                      href={project.id ? `/projects/${project.id}` : '#'}
+                      className={project.id ? 'cursor-pointer' : 'cursor-default'}
+                    >
+                      <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-medium">{project.title}</h4>
+                            {project.client && (
+                              <p className="text-sm text-muted-foreground">{project.client}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold">{formatCurrency(project.total)}</div>
+                            <div className="text-sm text-muted-foreground">{project.count} платежей</div>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="font-semibold">{formatCurrency(project.total)}</div>
-                          <div className="text-sm text-muted-foreground">{project.count} платежей</div>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div className="text-green-600">
+                            Получено: {formatCurrency(project.paid)}
+                          </div>
+                          <div className="text-yellow-600">
+                            Ожидается: {formatCurrency(project.pending)}
+                          </div>
+                          <div className="text-red-600">
+                            Просрочено: {formatCurrency(project.overdue)}
+                          </div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div className="text-green-600">
-                          Получено: {formatCurrency(project.paid)}
-                        </div>
-                        <div className="text-yellow-600">
-                          Ожидается: {formatCurrency(project.pending)}
-                        </div>
-                        <div className="text-red-600">
-                          Просрочено: {formatCurrency(project.overdue)}
-                        </div>
-                      </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </CardContent>
@@ -412,13 +423,14 @@ export default function AnalyticsPage() {
               <CardContent>
                 <div className="space-y-3">
                   {analytics.recentPayments.slice(0, 5).map((payment) => (
-                    <div key={payment.id} className="flex justify-between items-center p-3 border rounded-lg">
-                      <div>
-                        <div className="font-medium">{formatCurrency(payment.amount, payment.currency)}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {payment.project?.title || 'Без проекта'}
+                    <Link key={payment.id} href={`/payments/${payment.id}`}>
+                      <div className="flex justify-between items-center p-3 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                        <div>
+                          <div className="font-medium">{formatCurrency(payment.amount, payment.currency)}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {payment.project?.title || 'Без проекта'}
+                          </div>
                         </div>
-                      </div>
                       <div className="text-right">
                         <Badge 
                           className={
@@ -434,7 +446,8 @@ export default function AnalyticsPage() {
                           {formatDate(payment.createdAt)}
                         </div>
                       </div>
-                    </div>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </CardContent>
