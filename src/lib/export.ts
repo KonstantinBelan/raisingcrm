@@ -28,8 +28,21 @@ export class DataExporter {
   }
 
   private transliterate(text: string): string {
-    // Не транслитерируем, оставляем русские символы как есть
-    return text;
+    // Транслитерация русских символов в латинские для совместимости с PDF
+    const transliterationMap: { [key: string]: string } = {
+      'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+      'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+      'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+      'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+      'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+      'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
+      'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
+      'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
+      'Ф': 'F', 'Х': 'H', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch',
+      'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
+    };
+
+    return text.replace(/[а-яёА-ЯЁ]/g, (match) => transliterationMap[match] || match);
   }
 
   private formatCurrency(amount: number): string {
@@ -69,7 +82,7 @@ export class DataExporter {
     ]);
 
     autoTable(doc, {
-      head: [[this.transliterate('Nazvanie'), this.transliterate('Klient'), this.transliterate('Status'), this.transliterate('Byudzhet'), this.transliterate('Dedlayn'), this.transliterate('Zadach')]],
+      head: [['Nazvanie', 'Klient', 'Status', 'Byudzhet', 'Dedlayn', 'Zadach']],
       body: tableData,
       startY: options.includeDate ? 40 : 30,
       styles: { fontSize: 8 },
@@ -102,7 +115,7 @@ export class DataExporter {
     ]);
 
     autoTable(doc, {
-      head: [[this.transliterate('Nazvanie'), this.transliterate('Proekt'), this.transliterate('Status'), this.transliterate('Prioritet'), this.transliterate('Dedlayn'), this.transliterate('Chasov')]],
+      head: [['Nazvanie', 'Proekt', 'Status', 'Prioritet', 'Dedlayn', 'Chasov']],
       body: tableData,
       startY: options.includeDate ? 40 : 30,
       styles: { fontSize: 8 },
@@ -135,7 +148,7 @@ export class DataExporter {
     ]);
 
     autoTable(doc, {
-      head: [[this.transliterate('Opisanie'), this.transliterate('Proekt'), this.transliterate('Summa'), this.transliterate('Valyuta'), this.transliterate('Status'), this.transliterate('Data')]],
+      head: [['Opisanie', 'Proekt', 'Summa', 'Valyuta', 'Status', 'Data']],
       body: tableData,
       startY: options.includeDate ? 40 : 30,
       styles: { fontSize: 8 },

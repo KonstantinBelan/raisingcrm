@@ -58,13 +58,20 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   const fetchClientPayments = async (clientId: string) => {
     try {
-      const response = await fetch('/api/payments');
+      const response = await fetch(`/api/payments?clientId=${clientId}`);
       if (response.ok) {
         const data = await response.json();
-        const clientPayments = data.payments.filter((p: any) => 
-          p.project?.clientId === clientId
-        );
-        setPayments(clientPayments);
+        setPayments(data.payments || []);
+      } else {
+        // Fallback: get all payments and filter client-side
+        const allPaymentsResponse = await fetch('/api/payments');
+        if (allPaymentsResponse.ok) {
+          const allData = await allPaymentsResponse.json();
+          const clientPayments = allData.payments.filter((p: any) => 
+            p.project?.clientId === clientId
+          );
+          setPayments(clientPayments);
+        }
       }
     } catch (error) {
       console.error('Error fetching payments:', error);
@@ -156,7 +163,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const totalProjects = client.projects?.length || 0;
   const activeProjects = client.projects?.filter(p => p.status === 'ACTIVE').length || 0;
   const completedProjects = client.projects?.filter(p => p.status === 'COMPLETED').length || 0;
-  const totalBudget = client.projects?.reduce((sum, p) => sum + Number(p.budget || 0), 0) || 0;
+  const totalBudget = (client as any).totalBudget || client.projects?.reduce((sum, p) => sum + Number(p.budget || 0), 0) || 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('ru-RU', {

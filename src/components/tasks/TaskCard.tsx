@@ -5,12 +5,22 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   Calendar,
   AlertTriangle,
   Clock,
   ExternalLink,
-  GripVertical
+  GripVertical,
+  MoreVertical,
+  CheckCircle,
+  Play,
+  Eye
 } from 'lucide-react';
 import Link from 'next/link';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
@@ -35,6 +45,7 @@ export interface Task {
 interface TaskCardProps {
   task: Task;
   isDragging?: boolean;
+  onStatusChange?: (taskId: string, newStatus: Task['status']) => void;
 }
 
 const priorityConfig = {
@@ -60,7 +71,30 @@ const priorityConfig = {
   }
 };
 
-export function TaskCard({ task }: { task: Task }) {
+const statusConfig = {
+  TODO: {
+    label: 'К выполнению',
+    icon: Clock,
+    color: 'text-gray-600'
+  },
+  IN_PROGRESS: {
+    label: 'В работе',
+    icon: Play,
+    color: 'text-blue-600'
+  },
+  REVIEW: {
+    label: 'На проверке',
+    icon: Eye,
+    color: 'text-yellow-600'
+  },
+  DONE: {
+    label: 'Выполнено',
+    icon: CheckCircle,
+    color: 'text-green-600'
+  }
+};
+
+export function TaskCard({ task, isDragging: isDraggingProp, onStatusChange }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -84,12 +118,18 @@ export function TaskCard({ task }: { task: Task }) {
 
   const priorityStyle = priorityConfig[task.priority];
 
+  const handleStatusChange = (newStatus: Task['status']) => {
+    if (onStatusChange) {
+      onStatusChange(task.id, newStatus);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={`cursor-pointer transition-all duration-200 ${
-        isDragging ? 'opacity-50 scale-105 rotate-2' : 'hover:shadow-md'
+        isDragging || isDraggingProp ? 'opacity-50 scale-105 rotate-2' : 'hover:shadow-md'
       }`}
     >
       <Card className={`
@@ -110,12 +150,42 @@ export function TaskCard({ task }: { task: Task }) {
                 </p>
               )}
             </div>
-            <div 
-              {...attributes} 
-              {...listeners}
-              className="ml-2 p-1 hover:bg-muted rounded cursor-grab active:cursor-grabbing"
-            >
-              <GripVertical className="w-3 h-3 text-muted-foreground" />
+            <div className="flex items-center gap-1 ml-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 hover:bg-muted"
+                  >
+                    <MoreVertical className="w-3 h-3 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {Object.entries(statusConfig).map(([status, config]) => {
+                    const Icon = config.icon;
+                    const isCurrentStatus = task.status === status;
+                    return (
+                      <DropdownMenuItem
+                        key={status}
+                        onClick={() => handleStatusChange(status as Task['status'])}
+                        disabled={isCurrentStatus}
+                        className={`flex items-center gap-2 ${isCurrentStatus ? 'bg-muted' : ''}`}
+                      >
+                        <Icon className={`w-4 h-4 ${config.color}`} />
+                        <span>{config.label}</span>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <div 
+                {...attributes} 
+                {...listeners}
+                className="p-1 hover:bg-muted rounded cursor-grab active:cursor-grabbing"
+              >
+                <GripVertical className="w-3 h-3 text-muted-foreground" />
+              </div>
             </div>
           </div>
 

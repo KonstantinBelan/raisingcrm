@@ -26,6 +26,7 @@ model User {
   payments      Payment[]
   reminders     Reminder[]
   telegramChats TelegramChat[]
+  timeSessions  TimeSession[]
 
   @@map("users")
 }
@@ -96,8 +97,8 @@ model Task {
   description        String?
   status             TaskStatus @default(TODO)
   priority           Priority   @default(MEDIUM)
-  estimatedHours     Int?
-  actualHours        Int?
+  estimatedHours     Float?
+  actualHours        Float?
   deadline           DateTime?
   dueDate            DateTime?
   source             TaskSource @default(MANUAL)
@@ -116,7 +117,8 @@ model Task {
   parentTask   Task?   @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
   subtasks     Task[]  @relation("TaskHierarchy")
 
-  reminders Reminder[]
+  reminders    Reminder[]
+  timeSessions TimeSession[]
 
   @@map("tasks")
 }
@@ -192,4 +194,22 @@ model TelegramChat {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("telegram_chats")
+}
+
+model TimeSession {
+  id        String   @id @default(cuid())
+  startTime DateTime
+  endTime   DateTime
+  duration  Float    // Duration in seconds
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("time_sessions")
 }

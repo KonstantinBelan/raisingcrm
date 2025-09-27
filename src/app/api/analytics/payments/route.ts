@@ -156,12 +156,19 @@ export async function GET(request: NextRequest) {
       const monthPaid = monthPayments
         .filter((p: { status: string }) => p.status === 'PAID')
         .reduce((sum: number, p: { amount: Decimal }) => sum + Number(p.amount), 0);
+      const monthPending = monthPayments
+        .filter((p: { status: string }) => p.status === 'PENDING')
+        .reduce((sum: number, p: { amount: Decimal }) => sum + Number(p.amount), 0);
+      const monthOverdue = monthPayments
+        .filter((p: { status: string }) => p.status === 'OVERDUE')
+        .reduce((sum: number, p: { amount: Decimal }) => sum + Number(p.amount), 0);
       
       monthlyData.push({
         month: monthStart.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
         total: monthTotal,
         paid: monthPaid,
-        pending: monthTotal - monthPaid,
+        pending: monthPending,
+        overdue: monthOverdue,
       });
     }
 

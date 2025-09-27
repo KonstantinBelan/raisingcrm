@@ -80,6 +80,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       if (response.ok) {
         const data = await response.json();
         setTask(data.task);
+        
+        // Load time sessions
+        fetchTimeHistory(id);
       } else if (response.status === 404) {
         router.push('/tasks');
       }
@@ -87,6 +90,18 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       console.error('Error fetching task:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTimeHistory = async (id: string) => {
+    try {
+      const response = await fetch(`/api/tasks/${id}/time-sessions`);
+      if (response.ok) {
+        const data = await response.json();
+        setTimeHistory(data.timeSessions || []);
+      }
+    } catch (error) {
+      console.error('Error fetching time history:', error);
     }
   };
 
@@ -161,27 +176,32 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       comment: comment.trim(),
     };
 
-    // Add to history
-    setTimeHistory(prev => [...prev, sessionData]);
-
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PUT',
+      // Save to backend
+      const response = await fetch(`/api/tasks/${taskId}/time-sessions`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          actualHours: task.actualHours ? task.actualHours + timeTracking.elapsedTime / 3600 : timeTracking.elapsedTime / 3600,
-        }),
+        body: JSON.stringify(sessionData),
       });
 
       if (response.ok) {
         const data = await response.json();
         setTask(data.task);
+        setTimeHistory(prev => [...prev, sessionData]);
+        setTimeTracking(prev => ({ ...prev, elapsedTime: 0 }));
+      } else {
+        console.error('Failed to save time session');
+        // Fallback to local storage
+        setTimeHistory(prev => [...prev, sessionData]);
         setTimeTracking(prev => ({ ...prev, elapsedTime: 0 }));
       }
     } catch (error) {
       console.error('Error saving time:', error);
+      // Fallback to local storage
+      setTimeHistory(prev => [...prev, sessionData]);
+      setTimeTracking(prev => ({ ...prev, elapsedTime: 0 }));
     }
   };
 
@@ -223,6 +243,22 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('ru-RU');
+  };
+
+  const formatDuration = (hours: number) => {
+    if (!hours || hours === 0) return '0 мин';
+    
+    const totalSeconds = Math.round(hours * 3600);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    
+    const parts = [];
+    if (h > 0) parts.push(`${h}ч`);
+    if (m > 0) parts.push(`${m}мин`);
+    if (s > 0 && h === 0) parts.push(`${s}с`); // Показываем секунды только если нет часов
+    
+    return parts.length > 0 ? parts.join(' ') : '0 мин';
   };
 
   const isOverdue = (date: Date | string) => {
@@ -356,11 +392,11 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Всего потрачено</p>
-              <p className="text-2xl font-bold">{task.actualHours || 0}ч</p>
+              <p className="text-2xl font-bold">{formatDuration(task.actualHours || 0)}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Оценка</p>
-              <p className="text-2xl font-bold">{task.estimatedHours || 0}ч</p>
+              <p className="text-2xl font-bold">{formatDuration(task.estimatedHours || 0)}</p>
             </div>
           </div>
           
@@ -407,7 +443,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               <TabsContent key={period} value={period} className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">
-                    Итоговое время: {formatTime(getTotalTimeForPeriod(period as '24h' | '7d' | 'all'))}
+                    Итоговое время: {formatDuration(getTotalTimeForPeriod(period as '24h' | '7d' | 'all') / 3600)}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     Сессий: {getTimeHistoryByPeriod(period as '24h' | '7d' | 'all').length}
@@ -437,7 +473,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                             </div>
                             <div className="text-right">
                               <div className="text-sm font-medium">
-                                Время: {formatTime(session.duration)}
+                                Время: {formatDuration(session.duration / 3600)}
                               </div>
                             </div>
                           </div>

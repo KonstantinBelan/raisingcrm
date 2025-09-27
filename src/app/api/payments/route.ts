@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const status = searchParams.get('status');
     const projectId = searchParams.get('projectId');
+    const clientId = searchParams.get('clientId');
 
     const whereClause: Record<string, unknown> = {
       userId: user.id,
@@ -37,6 +38,12 @@ export async function GET(request: NextRequest) {
 
     if (projectId) {
       whereClause.projectId = projectId;
+    }
+
+    if (clientId) {
+      whereClause.project = {
+        clientId: clientId,
+      };
     }
 
     const payments = await prisma.payment.findMany({

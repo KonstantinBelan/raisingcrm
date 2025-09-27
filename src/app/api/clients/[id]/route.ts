@@ -53,7 +53,18 @@ export async function GET(
       return NextResponse.json({ error: 'Client not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ client });
+    // Calculate total budget from all projects
+    const totalBudget = client.projects.reduce((sum, project) => {
+      return sum + (project.budget ? Number(project.budget) : 0);
+    }, 0);
+
+    // Add calculated budget to client data
+    const clientWithBudget = {
+      ...client,
+      totalBudget,
+    };
+
+    return NextResponse.json({ client: clientWithBudget });
   } catch (error) {
     console.error('Error fetching client:', error);
     return NextResponse.json(

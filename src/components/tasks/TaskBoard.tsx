@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import {
   DndContext,
   DragEndEvent,
+  DragOverEvent,
   DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
+  closestCenter,
   useDroppable,
   DragOverlay,
 } from '@dnd-kit/core';
@@ -80,11 +81,26 @@ const statusConfig = {
 
 // Droppable component
 const Droppable = ({ children, id }: { children: React.ReactNode; id: string }) => {
-  const { setNodeRef } = useDroppable({ id });
+  const { setNodeRef, isOver } = useDroppable({ 
+    id,
+    data: {
+      type: 'status',
+      status: id,
+    }
+  });
   
   return (
-    <div ref={setNodeRef}>
+    <div 
+      ref={setNodeRef} 
+      data-droppable-status={id}
+      className={`transition-all duration-200 ${
+        isOver ? 'bg-primary/5 ring-2 ring-primary/20 rounded-lg' : ''
+      }`}
+    >
       {children}
+      {isOver && (
+        <div className="mt-2 h-1 bg-primary/30 rounded-full animate-pulse" />
+      )}
     </div>
   );
 };
@@ -92,6 +108,7 @@ const Droppable = ({ children, id }: { children: React.ReactNode; id: string }) 
 export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [originalTaskStatus, setOriginalTaskStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const sensors = useSensors(
@@ -124,6 +141,20 @@ export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
   };
 
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
+    // Validate status before sending
+    const validStatuses = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
+    if (!validStatuses.includes(newStatus)) {
+      console.error('Invalid status:', newStatus);
+      return;
+    }
+
+    // Оптимистично обновляем UI
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId ? { ...task, status: newStatus as Task['status'] } : task
+      )
+    );
+
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
@@ -134,18 +165,22 @@ export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
       });
 
       if (response.ok) {
-        setTasks(prevTasks =>
-          prevTasks.map(task =>
-            task.id === taskId ? { ...task, status: newStatus as Task['status'] } : task
-          )
-        );
-        
+        // Успешно обновлено, вызываем callback
         if (onTaskUpdate) {
           onTaskUpdate(taskId, newStatus);
         }
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to update task status:', errorData);
+        alert(`Ошибка: ${errorData.error || 'Не удалось обновить статус задачи'}`);
+        // Возвращаем задачи в исходное состояние
+        fetchTasks();
       }
     } catch (error) {
       console.error('Error updating task status:', error);
+      alert('Ошибка сети при обновлении статуса задачи');
+      // Возвращаем задачи в исходное состояние
+      fetchTasks();
     }
   };
 
@@ -153,26 +188,113 @@ export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
     const { active } = event;
     const task = tasks.find(t => t.id === active.id);
     setActiveTask(task || null);
+    setOriginalTaskStatus(task?.status || null);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // Если перетаскиваем на себя, ничего не делаем
+    if (activeId === overId) return;
+
+    // Найдем активную задачу
+    const activeTask = tasks.find(t => t.id === activeId);
+    if (!activeTask) return;
+
+    // Определим новый статус
+    let newStatus = overId;
+    const validStatuses = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
+    
+    if (over.data?.current?.type === 'status') {
+      newStatus = over.data.current.status;
+    } else if (!validStatuses.includes(newStatus)) {
+      const overTask = tasks.find(t => t.id === overId);
+      if (overTask) {
+        newStatus = overTask.status;
+      } else {
+        return;
+      }
+    }
+
+    // Обновляем позицию задачи в реальном времени для визуального эффекта
+    setTasks(prevTasks => {
+      const updatedTasks = [...prevTasks];
+      const activeIndex = updatedTasks.findIndex(t => t.id === activeId);
+      
+      if (activeIndex !== -1) {
+        // Удаляем задачу из текущей позиции
+        const [movedTask] = updatedTasks.splice(activeIndex, 1);
+        
+        // Обновляем статус (может остаться тем же при сортировке внутри колонки)
+        movedTask.status = newStatus as Task['status'];
+        
+        // Находим позицию для вставки
+        let insertIndex = updatedTasks.length;
+        
+        if (validStatuses.includes(overId)) {
+          // Если перетащили на колонку, добавляем в конец
+          const tasksInStatus = updatedTasks.filter(t => t.status === newStatus);
+          insertIndex = updatedTasks.findIndex(t => t.status === newStatus) + tasksInStatus.length;
+        } else {
+          // Если перетащили на задачу, вставляем перед ней
+          const overIndex = updatedTasks.findIndex(t => t.id === overId);
+          if (overIndex !== -1) {
+            insertIndex = overIndex;
+          }
+        }
+        
+        // Вставляем задачу в новую позицию
+        updatedTasks.splice(insertIndex, 0, movedTask);
+      }
+      
+      return updatedTasks;
+    });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
+    setActiveTask(null);
+    
     if (!over) {
-      setActiveTask(null);
+      // Если не было валидного drop target, возвращаем задачу на место
+      fetchTasks();
+      setOriginalTaskStatus(null);
       return;
     }
 
     const taskId = active.id as string;
-    const newStatus = over.id as string;
+    let newStatus = over.id as string;
     
-    const task = tasks.find(t => t.id === taskId);
+    const validStatuses = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
     
-    if (task && task.status !== newStatus) {
-      updateTaskStatus(taskId, newStatus);
+    // Определяем финальный статус
+    if (over.data?.current?.type === 'status') {
+      newStatus = over.data.current.status;
+    } else if (!validStatuses.includes(newStatus)) {
+      const overTask = tasks.find(t => t.id === over.id);
+      if (overTask) {
+        newStatus = overTask.status;
+      } else {
+        // Если не удалось определить статус, возвращаем задачу на место
+        fetchTasks();
+        setOriginalTaskStatus(null);
+        return;
+      }
     }
     
-    setActiveTask(null);
+    // Отправляем обновление на сервер только если статус действительно изменился
+    if (originalTaskStatus && originalTaskStatus !== newStatus) {
+      updateTaskStatus(taskId, newStatus);
+    }
+    // Если статус не изменился (сортировка внутри колонки), ничего не отправляем
+    
+    setOriginalTaskStatus(null);
   };
 
   const getTasksByStatus = (status: string) => {
@@ -202,8 +324,9 @@ export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -245,13 +368,17 @@ export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
                       data-status={status}
                     >
                       {statusTasks.map((task) => (
-                        <TaskCard key={task.id} task={task} />
+                        <TaskCard 
+                          key={task.id} 
+                          task={task} 
+                          onStatusChange={updateTaskStatus}
+                        />
                       ))}
                       
                       {statusTasks.length === 0 && (
-                        <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center h-32 text-muted-foreground border-2 border-dashed border-muted-foreground/20 rounded-lg">
                           <Icon className="w-8 h-8 mb-2 opacity-50" />
-                          <p className="text-sm">Нет задач</p>
+                          <p className="text-sm">Перетащите задачу сюда</p>
                         </div>
                       )}
                     </div>
@@ -275,7 +402,7 @@ export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
       <DragOverlay>
         {activeTask ? (
           <div className="rotate-3 opacity-90">
-            <TaskCard task={activeTask} isDragging />
+            <TaskCard task={activeTask} isDragging onStatusChange={updateTaskStatus} />
           </div>
         ) : null}
       </DragOverlay>

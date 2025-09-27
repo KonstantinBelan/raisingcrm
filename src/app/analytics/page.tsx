@@ -112,10 +112,15 @@ export default function AnalyticsPage() {
         ...(selectedProject && { projectId: selectedProject }),
       });
       
+      console.log('Fetching analytics with params:', params.toString()); // Debug log
+      
       const response = await fetch(`/api/analytics/payments?${params}`);
       if (response.ok) {
         const data = await response.json();
+        console.log('Analytics data received:', data); // Debug log
         setAnalytics(data);
+      } else {
+        console.error('Failed to fetch analytics:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -163,7 +168,8 @@ export default function AnalyticsPage() {
           <div>
             <h1 className="text-3xl font-bold">Финансовая аналитика</h1>
             <p className="text-muted-foreground">
-              Обзор доходов и платежей за выбранный период
+              Обзор доходов и платежей за {periods.find(p => p.value === selectedPeriod)?.label.toLowerCase() || selectedPeriod + ' дней'}
+              {selectedProject && ` • Проект: ${projects.find(p => p.id === selectedProject)?.title}`}
             </p>
           </div>
         </div>
@@ -195,7 +201,33 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {analytics && (
+      {!analytics || analytics.summary.count === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
+              Нет данных для аналитики
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Добавьте платежи и проекты для просмотра финансовой аналитики
+            </p>
+            <div className="flex gap-2 justify-center">
+              <Link href="/payments/new">
+                <Button>
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Добавить платеж
+                </Button>
+              </Link>
+              <Link href="/projects/new">
+                <Button variant="outline">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Создать проект
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -341,10 +373,9 @@ export default function AnalyticsPage() {
                         name === 'paid' ? 'Получено' : name === 'pending' ? 'Ожидается' : name === 'overdue' ? 'Просрочено' : 'Общая сумма'
                       ]}
                     />
-                    <Area type="monotone" dataKey="total" stackId="1" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
-                    <Area type="monotone" dataKey="paid" stackId="2" stroke="#22c55e" fill="#22c55e" fillOpacity={0.6} />
-                    <Area type="monotone" dataKey="pending" stackId="3" stroke="#eab308" fill="#eab308" fillOpacity={0.6} />
-                    <Area type="monotone" dataKey="overdue" stackId="4" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} />
+                    <Area type="monotone" dataKey="paid" stackId="1" stroke="#22c55e" fill="#22c55e" fillOpacity={0.6} />
+                    <Area type="monotone" dataKey="pending" stackId="2" stroke="#eab308" fill="#eab308" fillOpacity={0.6} />
+                    <Area type="monotone" dataKey="overdue" stackId="3" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
