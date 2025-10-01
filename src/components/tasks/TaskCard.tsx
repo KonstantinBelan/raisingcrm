@@ -25,6 +25,7 @@ import {
 import Link from 'next/link';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { MobileTaskActions } from './MobileTaskActions';
 
 export interface Task {
   id: string;
@@ -137,26 +138,31 @@ export function TaskCard({ task, isDragging: isDraggingProp, onStatusChange }: T
         border-l-4 ${priorityStyle.border}
         ${isOverdue ? 'ring-2 ring-red-200 dark:ring-red-800' : ''}
         ${isDueSoon ? 'ring-2 ring-yellow-200 dark:ring-yellow-800' : ''}
+        touch-manipulation select-none
       `}>
-        <CardContent className="p-4">
+        <CardContent className="p-4 sm:p-6">
           <div className="flex items-start justify-between mb-2">
             <div className="flex-1 min-w-0">
-              <h4 className="font-medium text-sm leading-tight mb-1 truncate">
+              <h4 className="font-medium text-base sm:text-sm leading-tight mb-2 sm:mb-1 truncate">
                 {task.title}
               </h4>
               {task.description && (
-                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                <p className="text-sm sm:text-xs text-muted-foreground line-clamp-2 mb-3 sm:mb-2">
                   {task.description}
                 </p>
               )}
             </div>
             <div className="flex items-center gap-1 ml-2">
+              {/* Mobile Actions */}
+              <MobileTaskActions task={task} onStatusChange={handleStatusChange} />
+              
+              {/* Desktop Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 hover:bg-muted"
+                    className="hidden lg:flex h-6 w-6 p-0 hover:bg-muted"
                   >
                     <MoreVertical className="w-3 h-3 text-muted-foreground" />
                   </Button>
@@ -182,9 +188,9 @@ export function TaskCard({ task, isDragging: isDraggingProp, onStatusChange }: T
               <div 
                 {...attributes} 
                 {...listeners}
-                className="p-1 hover:bg-muted rounded cursor-grab active:cursor-grabbing"
+                className="p-2 sm:p-1 hover:bg-muted rounded cursor-grab active:cursor-grabbing touch-manipulation"
               >
-                <GripVertical className="w-3 h-3 text-muted-foreground" />
+                <GripVertical className="w-4 h-4 sm:w-3 sm:h-3 text-muted-foreground" />
               </div>
             </div>
           </div>
@@ -194,21 +200,21 @@ export function TaskCard({ task, isDragging: isDraggingProp, onStatusChange }: T
             <div className="flex items-center justify-between">
               <Badge 
                 variant="secondary" 
-                className={`text-xs ${priorityStyle.color}`}
+                className={`text-sm sm:text-xs px-3 py-1 sm:px-2 sm:py-0.5 ${priorityStyle.color}`}
               >
                 {priorityStyle.label}
               </Badge>
               
               {isOverdue && (
-                <Badge variant="destructive" className="text-xs">
-                  <AlertTriangle className="w-3 h-3 mr-1" />
+                <Badge variant="destructive" className="text-sm sm:text-xs px-3 py-1 sm:px-2 sm:py-0.5">
+                  <AlertTriangle className="w-4 h-4 sm:w-3 sm:h-3 mr-1" />
                   Просрочено
                 </Badge>
               )}
               
               {isDueSoon && !isOverdue && (
-                <Badge variant="outline" className="text-xs border-yellow-400 text-yellow-600">
-                  <Clock className="w-3 h-3 mr-1" />
+                <Badge variant="outline" className="text-sm sm:text-xs px-3 py-1 sm:px-2 sm:py-0.5 border-yellow-400 text-yellow-600">
+                  <Clock className="w-4 h-4 sm:w-3 sm:h-3 mr-1" />
                   Скоро
                 </Badge>
               )}
@@ -218,7 +224,7 @@ export function TaskCard({ task, isDragging: isDraggingProp, onStatusChange }: T
             {task.project && (
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
-                <span className="text-xs text-muted-foreground truncate">
+                <span className="text-sm sm:text-xs text-muted-foreground truncate">
                   {task.project.title}
                 </span>
               </div>
@@ -226,8 +232,8 @@ export function TaskCard({ task, isDragging: isDraggingProp, onStatusChange }: T
 
             {/* Deadline */}
             {deadline && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="w-3 h-3" />
+              <div className="flex items-center gap-1 text-sm sm:text-xs text-muted-foreground">
+                <Calendar className="w-4 h-4 sm:w-3 sm:h-3" />
                 <span className={isOverdue ? 'text-red-600 dark:text-red-400' : ''}>
                   {format(new Date(deadline), 'dd MMM yyyy', { locale: ru })}
                 </span>
@@ -235,14 +241,14 @@ export function TaskCard({ task, isDragging: isDraggingProp, onStatusChange }: T
             )}
 
             {/* Actions */}
-            <div className="flex items-center justify-between pt-2 border-t">
-              <span className="text-xs text-muted-foreground">
+            <div className="flex items-center justify-between pt-3 sm:pt-2 border-t">
+              <span className="text-sm sm:text-xs text-muted-foreground">
                 {format(new Date(task.updatedAt), 'dd.MM', { locale: ru })}
               </span>
               
               <Link href={`/tasks/${task.id}`}>
-                <Button variant="ghost" size="sm" className="h-6 px-2">
-                  <ExternalLink className="w-3 h-3" />
+                <Button variant="ghost" size="sm" className="h-8 px-3 sm:h-6 sm:px-2 touch-manipulation">
+                  <ExternalLink className="w-4 h-4 sm:w-3 sm:h-3" />
                 </Button>
               </Link>
             </div>

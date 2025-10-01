@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt, OfflineIndicator } from "@/components/pwa";
+import { MobileNavigation } from "@/components/navigation/MobileNavigation";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className="dark" style={{"--tg-viewport-height":"100vh","--tg-viewport-stable-height":"100vh"}}>
+    <html lang="ru" className="dark tg-viewport">
       <head>
         <script src="https://telegram.org/js/telegram-web-app.js" async></script>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
@@ -47,6 +48,7 @@ export default function RootLayout({
         <div className="min-h-screen bg-gradient-to-br from-background to-muted">
           {children}
         </div>
+        <MobileNavigation />
         <Toaster />
         <InstallPrompt />
         <OfflineIndicator />

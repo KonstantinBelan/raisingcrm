@@ -142,67 +142,69 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
+    <div className="container mx-auto p-4 pb-20 lg:pb-4 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold text-primary">Raising CRM</h1>
-          <p className="text-muted-foreground">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="text-center sm:text-left space-y-2">
+          <h1 className="text-3xl sm:text-2xl font-bold text-primary">Raising CRM</h1>
+          <p className="text-base sm:text-sm text-muted-foreground">
             Добро пожаловать, {user?.firstName || 'Фрилансер'}! 👋
           </p>
         </div>
-        <ExportManager />
+        <div className="hidden sm:block">
+          <ExportManager />
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Проекты</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
+      <div className="grid grid-cols-2 gap-4 sm:gap-6">
+        <Card className="touch-manipulation">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4 sm:px-6 sm:pt-6">
+            <CardTitle className="text-base sm:text-sm font-medium">Проекты</CardTitle>
+            <Briefcase className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.projects.count}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
+            <div className="text-3xl sm:text-2xl font-bold">{stats.projects.count}</div>
+            <p className="text-sm sm:text-xs text-muted-foreground">
               +{stats.projects.weeklyChange} за эту неделю
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Задачи</CardTitle>
-            <CheckSquare className="h-4 w-4 text-muted-foreground" />
+        <Card className="touch-manipulation">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4 sm:px-6 sm:pt-6">
+            <CardTitle className="text-base sm:text-sm font-medium">Задачи</CardTitle>
+            <CheckSquare className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.tasks.count}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
+            <div className="text-3xl sm:text-2xl font-bold">{stats.tasks.count}</div>
+            <p className="text-sm sm:text-xs text-muted-foreground">
               {stats.tasks.completedToday} выполнено сегодня
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Клиенты</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+        <Card className="touch-manipulation">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4 sm:px-6 sm:pt-6">
+            <CardTitle className="text-base sm:text-sm font-medium">Клиенты</CardTitle>
+            <Users className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.clients.count}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
+            <div className="text-3xl sm:text-2xl font-bold">{stats.clients.count}</div>
+            <p className="text-sm sm:text-xs text-muted-foreground">
               {stats.clients.newClients} новых клиентов
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Доход</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        <Card className="touch-manipulation">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4 sm:px-6 sm:pt-6">
+            <CardTitle className="text-base sm:text-sm font-medium">Доход</CardTitle>
+            <TrendingUp className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stats.revenue.amount)}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
+            <div className="text-3xl sm:text-2xl font-bold">{formatCurrency(stats.revenue.amount)}</div>
+            <p className="text-sm sm:text-xs text-muted-foreground">
               {stats.revenue.monthlyChange > 0 ? '+' : ''}{stats.revenue.monthlyChange}% к прошлому месяцу
             </p>
           </CardContent>
@@ -210,43 +212,43 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Быстрые действия</CardTitle>
-          <CardDescription>
+      <Card className="touch-manipulation">
+        <CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
+          <CardTitle className="text-xl sm:text-lg">Быстрые действия</CardTitle>
+          <CardDescription className="text-base sm:text-sm">
             Создайте новый проект или задачу одним нажатием
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4 sm:space-y-3 px-4 pb-4 sm:px-6 sm:pb-6">
           <Link href="/projects/new">
-            <Button className="w-full justify-start" variant="outline">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button className="w-full justify-start h-12 sm:h-10 text-base sm:text-sm touch-manipulation" variant="outline">
+              <Plus className="w-5 h-5 sm:w-4 sm:h-4 mr-3 sm:mr-2" />
               Создать новый проект
             </Button>
           </Link>
           <Link href="/tasks/new">
-            <Button className="w-full justify-start" variant="outline">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button className="w-full justify-start h-12 sm:h-10 text-base sm:text-sm touch-manipulation" variant="outline">
+              <Plus className="w-5 h-5 sm:w-4 sm:h-4 mr-3 sm:mr-2" />
               Добавить задачу
             </Button>
           </Link>
           <Link href="/clients/new">
-            <Button className="w-full justify-start" variant="outline">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button className="w-full justify-start h-12 sm:h-10 text-base sm:text-sm touch-manipulation" variant="outline">
+              <Plus className="w-5 h-5 sm:w-4 sm:h-4 mr-3 sm:mr-2" />
               Новый клиент
             </Button>
           </Link>
           <Link href="/payments/new">
-            <Button className="w-full justify-start" variant="outline">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button className="w-full justify-start h-12 sm:h-10 text-base sm:text-sm touch-manipulation" variant="outline">
+              <Plus className="w-5 h-5 sm:w-4 sm:h-4 mr-3 sm:mr-2" />
               Добавить платеж
             </Button>
           </Link>
         </CardContent>
       </Card>
 
-      {/* Navigation */}
-      <Card>
+      {/* Navigation - Hidden on mobile, shown on desktop */}
+      <Card className="hidden lg:block touch-manipulation">
         <CardHeader>
           <CardTitle className="text-lg">Модули</CardTitle>
           <CardDescription>
@@ -306,30 +308,30 @@ export default function Dashboard() {
       </Card>
 
       {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Последняя активность</CardTitle>
+      <Card className="touch-manipulation">
+        <CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
+          <CardTitle className="text-xl sm:text-lg">Последняя активность</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <div className="flex-1">
-              <p className="text-sm">Задача &quot;Дизайн логотипа&quot; выполнена</p>
-              <p className="text-xs text-muted-foreground">2 часа назад</p>
+        <CardContent className="space-y-4 sm:space-y-3 px-4 pb-4 sm:px-6 sm:pb-6">
+          <div className="flex items-center space-x-4 sm:space-x-3">
+            <div className="w-3 h-3 sm:w-2 sm:h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+            <div className="flex-1 min-w-0">
+              <p className="text-base sm:text-sm">Задача &quot;Дизайн логотипа&quot; выполнена</p>
+              <p className="text-sm sm:text-xs text-muted-foreground">2 часа назад</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <div className="flex-1">
-              <p className="text-sm">Получен платеж от ООО &quot;Технологии&quot;</p>
-              <p className="text-xs text-muted-foreground">5 часов назад</p>
+          <div className="flex items-center space-x-4 sm:space-x-3">
+            <div className="w-3 h-3 sm:w-2 sm:h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+            <div className="flex-1 min-w-0">
+              <p className="text-base sm:text-sm">Получен платеж от ООО &quot;Технологии&quot;</p>
+              <p className="text-sm sm:text-xs text-muted-foreground">5 часов назад</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-            <div className="flex-1">
-              <p className="text-sm">Создан новый проект &quot;Мобильное приложение&quot;</p>
-              <p className="text-xs text-muted-foreground">1 день назад</p>
+          <div className="flex items-center space-x-4 sm:space-x-3">
+            <div className="w-3 h-3 sm:w-2 sm:h-2 bg-orange-500 rounded-full flex-shrink-0"></div>
+            <div className="flex-1 min-w-0">
+              <p className="text-base sm:text-sm">Создан новый проект &quot;Мобильное приложение&quot;</p>
+              <p className="text-sm sm:text-xs text-muted-foreground">1 день назад</p>
             </div>
           </div>
         </CardContent>
@@ -338,8 +340,17 @@ export default function Dashboard() {
       {/* Upcoming Reminders */}
       <UpcomingReminders />
 
-      {/* Bottom Navigation Placeholder */}
-      <div className="h-16"></div>
+      {/* Mobile Export Manager */}
+      <div className="lg:hidden">
+        <Card className="touch-manipulation">
+          <CardHeader className="px-4 pt-4">
+            <CardTitle className="text-xl">Экспорт данных</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <ExportManager />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

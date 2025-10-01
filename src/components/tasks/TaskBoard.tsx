@@ -329,27 +329,27 @@ export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {Object.entries(statusConfig).map(([status, config]) => {
           const statusTasks = getTasksByStatus(status);
           const stats = getStatusStats(status);
           const Icon = config.icon;
 
           return (
-            <Card key={status} className={`${config.borderColor} border-2`}>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center justify-between text-sm">
+            <Card key={status} className={`${config.borderColor} border-2 touch-manipulation`}>
+              <CardHeader className="pb-3 px-4 pt-4 sm:px-6 sm:pt-6">
+                <CardTitle className="flex items-center justify-between text-base sm:text-sm">
                   <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-5 h-5 sm:w-4 sm:h-4" />
                     {config.title}
                   </div>
                   <div className="flex items-center gap-1">
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-sm sm:text-xs px-2 py-1 sm:px-1.5 sm:py-0.5">
                       {stats.total}
                     </Badge>
                     {stats.urgent > 0 && (
-                      <Badge variant="destructive" className="text-xs">
-                        <AlertTriangle className="w-3 h-3 mr-1" />
+                      <Badge variant="destructive" className="text-sm sm:text-xs px-2 py-1 sm:px-1.5 sm:py-0.5">
+                        <AlertTriangle className="w-4 h-4 sm:w-3 sm:h-3 mr-1" />
                         {stats.urgent}
                       </Badge>
                     )}
@@ -357,14 +357,14 @@ export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
                 </CardTitle>
               </CardHeader>
               
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 px-4 pb-4 sm:px-6 sm:pb-6">
                 <SortableContext
                   items={statusTasks.map(task => task.id)}
                   strategy={verticalListSortingStrategy}
                 >
                   <Droppable id={status}>
                     <div 
-                      className="min-h-[200px] space-y-3"
+                      className="min-h-[250px] sm:min-h-[200px] space-y-4 sm:space-y-3"
                       data-status={status}
                     >
                       {statusTasks.map((task) => (
@@ -376,9 +376,9 @@ export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
                       ))}
                       
                       {statusTasks.length === 0 && (
-                        <div className="flex flex-col items-center justify-center h-32 text-muted-foreground border-2 border-dashed border-muted-foreground/20 rounded-lg">
-                          <Icon className="w-8 h-8 mb-2 opacity-50" />
-                          <p className="text-sm">Перетащите задачу сюда</p>
+                        <div className="flex flex-col items-center justify-center h-40 sm:h-32 text-muted-foreground border-2 border-dashed border-muted-foreground/20 rounded-lg">
+                          <Icon className="w-10 h-10 sm:w-8 sm:h-8 mb-2 opacity-50" />
+                          <p className="text-base sm:text-sm text-center px-2">Перетащите задачу сюда</p>
                         </div>
                       )}
                     </div>
@@ -387,8 +387,8 @@ export function TaskBoard({ initialTasks = [], onTaskUpdate }: TaskBoardProps) {
                 
                 <div className="mt-4 pt-3 border-t">
                   <Link href="/tasks/new">
-                    <Button variant="ghost" size="sm" className="w-full justify-start">
-                      <Plus className="w-4 h-4 mr-2" />
+                    <Button variant="ghost" size="sm" className="w-full justify-start h-10 sm:h-8 text-base sm:text-sm touch-manipulation">
+                      <Plus className="w-5 h-5 sm:w-4 sm:h-4 mr-2" />
                       Добавить задачу
                     </Button>
                   </Link>
