@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Edit, Trash2, Plus, Calendar, Clock, User, Briefcase, Play, Pause, Square, X } from 'lucide-react';
 import Link from 'next/link';
-import { Task } from '@/types';
+import type { Task, TimeSession } from '@/types/api';
 
 const statusColors = {
   TODO: 'bg-gray-100 text-gray-800',
@@ -51,7 +51,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     startTime: null as Date | null,
     elapsedTime: 0,
   });
-  const [timeHistory, setTimeHistory] = useState<any[]>([]);
+  const [timeHistory, setTimeHistory] = useState<TimeSession[]>([]);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentComment, setCurrentComment] = useState('');
 

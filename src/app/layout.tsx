@@ -4,6 +4,8 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt, OfflineIndicator } from "@/components/pwa";
 import { MobileNavigation } from "@/components/navigation/MobileNavigation";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -45,13 +47,17 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
       </head>
       <body className={`${inter.variable} font-sans antialiased bg-background text-foreground`}>
-        <div className="min-h-screen bg-gradient-to-br from-background to-muted">
-          {children}
-        </div>
-        <MobileNavigation />
-        <Toaster />
-        <InstallPrompt />
-        <OfflineIndicator />
+        <AuthProvider>
+          <AuthGuard>
+            <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+              {children}
+            </div>
+            <MobileNavigation />
+          </AuthGuard>
+          <Toaster />
+          <InstallPrompt />
+          <OfflineIndicator />
+        </AuthProvider>
       </body>
     </html>
   );

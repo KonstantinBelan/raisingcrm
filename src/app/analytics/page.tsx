@@ -17,7 +17,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Project, Payment } from '@/types';
+import type { Project, Payment, ChartDataPoint } from '@/types/api';
 import { ExportManager } from '@/components/export';
 import {
   XAxis,
@@ -313,7 +313,9 @@ export default function AnalyticsPage() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, value, payload }: any) => {
+                      label={(props: { name?: string; value?: number }) => {
+                        const name = props.name || '';
+                        const value = props.value || 0;
                         const total = analytics.summary.paid + analytics.summary.pending + analytics.summary.overdue;
                         const percent = total > 0 ? (value / total) * 100 : 0;
                         return `${name} ${percent.toFixed(0)}%`;

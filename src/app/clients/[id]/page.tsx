@@ -20,7 +20,7 @@ import {
   FileText
 } from 'lucide-react';
 import Link from 'next/link';
-import { Client, Project } from '@/types';
+import type { Client, Project, Payment } from '@/types/api';
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -28,7 +28,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [clientId, setClientId] = useState<string>('');
-  const [payments, setPayments] = useState<any[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
 
   useEffect(() => {
     const initializeClient = async () => {
@@ -67,7 +67,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         const allPaymentsResponse = await fetch('/api/payments');
         if (allPaymentsResponse.ok) {
           const allData = await allPaymentsResponse.json();
-          const clientPayments = allData.payments.filter((p: any) => 
+          const clientPayments = allData.payments.filter((p: Payment) => 
             p.project?.clientId === clientId
           );
           setPayments(clientPayments);
@@ -163,7 +163,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const totalProjects = client.projects?.length || 0;
   const activeProjects = client.projects?.filter(p => p.status === 'ACTIVE').length || 0;
   const completedProjects = client.projects?.filter(p => p.status === 'COMPLETED').length || 0;
-  const totalBudget = (client as any).totalBudget || client.projects?.reduce((sum, p) => sum + Number(p.budget || 0), 0) || 0;
+  const totalBudget = client.projects?.reduce((sum, p) => sum + Number(p.budget || 0), 0) || 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('ru-RU', {

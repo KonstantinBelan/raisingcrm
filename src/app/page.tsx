@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 import { telegramWebApp } from '@/lib/telegram';
+import type { Project, Task, Client, Payment } from '@/types/api';
 import { 
   BarChart3, 
   Users, 
-  FolderOpen, 
   CheckSquare, 
   CreditCard,
   Calendar,
@@ -22,7 +23,7 @@ import { UpcomingReminders } from '@/components/reminders';
 import { ExportManager } from '@/components/export';
 
 export default function Dashboard() {
-  const [user, setUser] = useState<{firstName?: string; lastName?: string; username?: string} | null>(null);
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     projects: { count: 0, weeklyChange: 0 },
@@ -32,10 +33,6 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    // Initialize Telegram WebApp
-    const userData = telegramWebApp.getUserData();
-    setUser(userData);
-    
     // Fetch dashboard statistics
     fetchDashboardStats();
 
@@ -64,20 +61,20 @@ export default function Dashboard() {
         paymentsRes.ok ? paymentsRes.json() : { payments: [] }
       ]);
 
-      const projects = projectsData.projects || [];
-      const tasks = tasksData.tasks || [];
-      const clients = clientsData.clients || [];
-      const payments = paymentsData.payments || [];
+      const projects: Project[] = projectsData.projects || [];
+      const tasks: Task[] = tasksData.tasks || [];
+      const clients: Client[] = clientsData.clients || [];
+      const payments: Payment[] = paymentsData.payments || [];
 
       // Calculate weekly project change
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      const newProjectsThisWeek = projects.filter((p: any) => new Date(p.createdAt) > weekAgo).length;
+      const newProjectsThisWeek = projects.filter((p: Project) => new Date(p.createdAt) > weekAgo).length;
 
       // Calculate tasks completed today
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const completedToday = tasks.filter((t: any) => 
+      const completedToday = tasks.filter((t: Task) => 
         t.status === 'DONE' && 
         t.updatedAt && 
         new Date(t.updatedAt) >= today
@@ -86,11 +83,11 @@ export default function Dashboard() {
       // Calculate new clients this month
       const monthAgo = new Date();
       monthAgo.setMonth(monthAgo.getMonth() - 1);
-      const newClientsThisMonth = clients.filter((c: any) => new Date(c.createdAt) > monthAgo).length;
+      const newClientsThisMonth = clients.filter((c: Client) => new Date(c.createdAt) > monthAgo).length;
 
       // Calculate revenue
-      const paidPayments = payments.filter((p: any) => p.status === 'PAID');
-      const totalRevenue = paidPayments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+      const paidPayments = payments.filter((p: Payment) => p.status === 'PAID');
+      const totalRevenue = paidPayments.reduce((sum: number, p: Payment) => sum + Number(p.amount || 0), 0);
       
       // Calculate monthly revenue change
       const thisMonth = new Date();
@@ -99,15 +96,15 @@ export default function Dashboard() {
       lastMonth.setMonth(lastMonth.getMonth() - 1);
       
       const thisMonthRevenue = paidPayments
-        .filter((p: any) => new Date(p.paidAt || p.createdAt) >= thisMonth)
-        .reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+        .filter((p: Payment) => new Date(p.paidDate || p.createdAt) >= thisMonth)
+        .reduce((sum: number, p: Payment) => sum + Number(p.amount || 0), 0);
       
       const lastMonthRevenue = paidPayments
-        .filter((p: any) => {
-          const date = new Date(p.paidAt || p.createdAt);
+        .filter((p: Payment) => {
+          const date = new Date(p.paidDate || p.createdAt);
           return date >= lastMonth && date < thisMonth;
         })
-        .reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+        .reduce((sum: number, p: Payment) => sum + Number(p.amount || 0), 0);
 
       const monthlyChange = lastMonthRevenue > 0 
         ? Math.round(((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)

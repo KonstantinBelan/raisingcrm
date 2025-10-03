@@ -343,7 +343,7 @@ export function ExportManager({ className }: ExportManagerProps) {
               <Checkbox
                 id="includeDate"
                 checked={includeDate}
-                onCheckedChange={setIncludeDate}
+                onCheckedChange={(checked) => setIncludeDate(checked === true)}
               />
               <Label htmlFor="includeDate" className="text-sm">
                 Включить дату создания в файл

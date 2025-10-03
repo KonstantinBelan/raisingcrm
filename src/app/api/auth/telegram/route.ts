@@ -1,28 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateTelegramWebAppData, parseUserFromInitData } from '@/lib/telegram';
 import { prisma } from '@/lib/prisma';
+import { parseUserFromInitData, validateTelegramWebAppData } from '@/lib/telegram';
+import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
-    const { initData } = await request.json();
-
+    // Получаем initData из заголовка
+    const initData = request.headers.get('x-telegram-init-data');
+    
     if (!initData) {
       return NextResponse.json(
-        { success: false, error: 'Init data is required' },
-        { status: 400 }
+        { success: false, error: 'No Telegram init data provided' },
+        { status: 401 }
       );
     }
 
-    // Validate Telegram WebApp data
+    // Валидируем данные Telegram
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
+      console.error('TELEGRAM_BOT_TOKEN not configured');
       return NextResponse.json(
-        { success: false, error: 'Bot token not configured' },
+        { success: false, error: 'Server configuration error' },
         { status: 500 }
       );
     }
 
-    const isValid = validateTelegramWebAppData(initData, botToken);
+    // Проверяем подпись данных
+    const isValid = await validateTelegramWebAppData(initData, botToken);
     if (!isValid) {
       return NextResponse.json(
         { success: false, error: 'Invalid Telegram data' },
@@ -30,16 +34,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse user data
+    // Парсим данные пользователя
     const userData = parseUserFromInitData(initData);
     if (!userData) {
       return NextResponse.json(
-        { success: false, error: 'Could not parse user data' },
+        { success: false, error: 'Failed to parse user data' },
         { status: 400 }
       );
     }
 
-    // Find or create user in database
+    // Находим или создаем пользователя в БД
     let user = await prisma.user.findUnique({
       where: { telegramId: userData.telegramId },
     });
@@ -51,38 +55,29 @@ export async function POST(request: NextRequest) {
           username: userData.username,
           firstName: userData.firstName,
           lastName: userData.lastName,
-        },
-      });
-    } else {
-      // Update user data if changed
-      user = await prisma.user.update({
-        where: { telegramId: userData.telegramId },
-        data: {
-          username: userData.username,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
+          isPremium: false,
         },
       });
     }
 
-    // Create session token (simple implementation)
-    const sessionToken = Buffer.from(
-      JSON.stringify({
-        userId: user.id,
-        telegramId: user.telegramId,
-        timestamp: Date.now(),
-      })
-    ).toString('base64');
+    // Сохраняем initData в cookie для последующих запросов
+    const cookieStore = await cookies();
+    cookieStore.set('telegram-init-data', initData, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 дней
+    });
 
     return NextResponse.json({
       success: true,
-      data: {
-        user: {
-          id: user.id,
-          telegramId: user.telegramId,
-          username: user.username,
-          firstName: user.firstName,
-        },
+      user: {
+        id: user.id,
+        telegramId: user.telegramId,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isPremium: user.isPremium,
       },
     });
   } catch (error) {
@@ -94,62 +89,53 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// GET метод для проверки текущей сессии
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const cookieStore = await cookies();
+    const initData = cookieStore.get('telegram-init-data')?.value;
+
+    if (!initData) {
       return NextResponse.json(
-        { success: false, error: 'No valid session token' },
+        { success: false, error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
-    const sessionToken = authHeader.substring(7);
-    
-    try {
-      const sessionData = JSON.parse(Buffer.from(sessionToken, 'base64').toString());
-      
-      // Check if session is not too old (24 hours)
-      const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-      if (Date.now() - sessionData.timestamp > maxAge) {
-        return NextResponse.json(
-          { success: false, error: 'Session expired' },
-          { status: 401 }
-        );
-      }
-
-      const user = await prisma.user.findUnique({
-        where: { id: sessionData.userId },
-      });
-
-      if (!user) {
-        return NextResponse.json(
-          { success: false, error: 'User not found' },
-          { status: 404 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          user: {
-            id: user.id,
-            telegramId: user.telegramId,
-            username: user.username,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            isPremium: user.isPremium,
-          },
-        },
-      });
-    } catch (parseError) {
+    // Парсим данные пользователя из сохраненного initData
+    const userData = parseUserFromInitData(initData);
+    if (!userData) {
       return NextResponse.json(
-        { success: false, error: 'Invalid session token' },
+        { success: false, error: 'Invalid session' },
         { status: 401 }
       );
     }
+
+    // Получаем пользователя из БД
+    const user = await prisma.user.findUnique({
+      where: { telegramId: userData.telegramId },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        telegramId: user.telegramId,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isPremium: user.isPremium,
+      },
+    });
   } catch (error) {
-    console.error('Session validation error:', error);
+    console.error('Session check error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
