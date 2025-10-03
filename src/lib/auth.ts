@@ -13,11 +13,35 @@ export async function auth(request: NextRequest): Promise<AuthSession | null> {
   try {
     // В режиме разработки можно использовать mock данные
     if (process.env.NODE_ENV === 'development' && process.env.USE_MOCK_AUTH === 'true') {
+      console.log('[AUTH] Using MOCK auth mode');
+      
+      const mockTelegramId = '123456789';
+      
+      // Сначала ищем по telegramId (так как это уникальное поле)
+      let mockUser = await prisma.user.findUnique({
+        where: { telegramId: mockTelegramId },
+      });
+      
+      if (!mockUser) {
+        console.log('[AUTH] MOCK user not found by telegramId, creating...');
+        // Создаем mock пользователя
+        mockUser = await prisma.user.create({
+          data: {
+            telegramId: mockTelegramId,
+            username: 'testuser',
+            firstName: 'Тест',
+          },
+        });
+        console.log('[AUTH] MOCK user created:', mockUser.id);
+      } else {
+        console.log('[AUTH] MOCK user found by telegramId:', mockUser.id);
+      }
+      
       return {
-        userId: 'cmfmq07ub0000nlarbsy9j798',
-        telegramId: '123456789',
-        username: 'testuser',
-        firstName: 'Тест',
+        userId: mockUser.id,
+        telegramId: mockUser.telegramId,
+        username: mockUser.username || undefined,
+        firstName: mockUser.firstName || undefined,
       };
     }
 
@@ -85,23 +109,4 @@ export async function requireAuth(request: NextRequest): Promise<AuthSession> {
   return session;
 }
 
-export async function getUser(): Promise<{ id: string; telegramId: string; username?: string; firstName?: string } | null> {
-  try {
-    // В режиме разработки можно использовать mock данные
-    if (process.env.NODE_ENV === 'development' && process.env.USE_MOCK_AUTH === 'true') {
-      return {
-        id: 'cmfmq07ub0000nlarbsy9j798',
-        telegramId: '123456789',
-        username: 'testuser',
-        firstName: 'Тест',
-      };
-    }
-
-    // В production это должно получать данные из контекста запроса
-    // Для клиентской стороны можно использовать другой подход
-    return null;
-  } catch (error) {
-    console.error('Get user error:', error);
-    return null;
-  }
-}
+// Функция getUser() удалена - используйте auth(request) вместо неё

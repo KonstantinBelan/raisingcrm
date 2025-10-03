@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getUser } from '@/lib/auth';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
@@ -10,15 +8,15 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    const user = await getUser();
-    if (!user) {
+    const session = await auth(request);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const payment = await prisma.payment.findFirst({
       where: {
         id: id,
-        userId: user.id,
+        userId: session.userId,
       },
       include: {
         project: {
@@ -55,8 +53,8 @@ export async function PUT(
 ) {
   const { id } = await params;
   try {
-    const user = await getUser();
-    if (!user) {
+    const session = await auth(request);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -82,7 +80,7 @@ export async function PUT(
     const existingPayment = await prisma.payment.findFirst({
       where: {
         id: id,
-        userId: user.id,
+        userId: session.userId,
       },
     });
 
@@ -95,7 +93,7 @@ export async function PUT(
       const project = await prisma.project.findFirst({
         where: {
           id: projectId,
-          userId: user.id,
+          userId: session.userId,
         },
       });
 
@@ -172,8 +170,8 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
-    const user = await getUser();
-    if (!user) {
+    const session = await auth(request);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -181,7 +179,7 @@ export async function DELETE(
     const payment = await prisma.payment.findFirst({
       where: {
         id: id,
-        userId: user.id,
+        userId: session.userId,
       },
     });
 

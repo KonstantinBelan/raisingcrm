@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
-import { getUser } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 
 type PaymentWithProject = {
   id: string;
@@ -18,12 +18,10 @@ type PaymentWithProject = {
   } | null;
 };
 
-const prisma = new PrismaClient();
-
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
+    const session = await auth(request);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -36,7 +34,7 @@ export async function GET(request: NextRequest) {
     startDate.setDate(startDate.getDate() - periodDays);
 
     const whereClause: Record<string, unknown> = {
-      userId: user.id,
+      userId: session.userId,
       createdAt: {
         gte: startDate,
       },
@@ -143,7 +141,7 @@ export async function GET(request: NextRequest) {
       
       const monthPayments = await prisma.payment.findMany({
         where: {
-          userId: user.id,
+          userId: session.userId,
           createdAt: {
             gte: monthStart,
             lte: monthEnd,
@@ -175,7 +173,7 @@ export async function GET(request: NextRequest) {
     // Recent payments
     const recentPayments = await prisma.payment.findMany({
       where: {
-        userId: user.id,
+        userId: session.userId,
         ...(projectId && { projectId }),
       },
       include: {
@@ -203,7 +201,7 @@ export async function GET(request: NextRequest) {
     
     const upcomingPayments = await prisma.payment.findMany({
       where: {
-        userId: user.id,
+        userId: session.userId,
         status: 'PENDING',
         dueDate: {
           gte: new Date(),

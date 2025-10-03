@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getUser } from '@/lib/auth';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
@@ -10,15 +8,15 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    const user = await getUser();
-    if (!user) {
+    const session = await auth(request);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const client = await prisma.client.findFirst({
       where: {
         id: id,
-        userId: user.id,
+        userId: session.userId,
       },
       include: {
         projects: {
@@ -80,8 +78,8 @@ export async function PUT(
 ) {
   const { id } = await params;
   try {
-    const user = await getUser();
-    if (!user) {
+    const session = await auth(request);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -107,7 +105,7 @@ export async function PUT(
     const existingClient = await prisma.client.findFirst({
       where: {
         id: id,
-        userId: user.id,
+        userId: session.userId,
       },
     });
 
@@ -119,7 +117,7 @@ export async function PUT(
     if (email && email !== existingClient.email) {
       const emailExists = await prisma.client.findFirst({
         where: {
-          userId: user.id,
+          userId: session.userId,
           email: email,
           id: { not: id },
         },
@@ -189,8 +187,8 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
-    const user = await getUser();
-    if (!user) {
+    const session = await auth(request);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -198,7 +196,7 @@ export async function DELETE(
     const client = await prisma.client.findFirst({
       where: {
         id: id,
-        userId: user.id,
+        userId: session.userId,
       },
       include: {
         projects: {

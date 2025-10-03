@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getUser } from '@/lib/auth';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
+    const session = await auth(request);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -18,7 +16,7 @@ export async function GET(request: NextRequest) {
     const clientId = searchParams.get('clientId');
 
     const whereClause: Record<string, unknown> = {
-      userId: user.id,
+      userId: session.userId,
     };
 
     if (search) {
@@ -129,8 +127,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
+    const session = await auth(request);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -157,7 +155,7 @@ export async function POST(request: NextRequest) {
       const project = await prisma.project.findFirst({
         where: {
           id: projectId,
-          userId: user.id,
+          userId: session.userId,
         },
       });
 
@@ -176,7 +174,7 @@ export async function POST(request: NextRequest) {
         description: description?.trim() || null,
         dueDate: dueDate ? new Date(dueDate) : null,
         status: 'PENDING',
-        userId: user.id,
+        userId: session.userId,
         projectId: projectId || null,
       },
       include: {

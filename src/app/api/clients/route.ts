@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getUser } from '@/lib/auth';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
+    const session = await auth(request);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -15,7 +13,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
 
     const whereClause: Record<string, unknown> = {
-      userId: user.id,
+      userId: session.userId,
     };
 
     if (search) {
@@ -61,13 +59,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
+    console.log('[CLIENTS POST] Starting client creation...');
+    const session = await auth(request);
+    console.log('[CLIENTS POST] Auth session:', session ? { userId: session.userId, telegramId: session.telegramId } : 'null');
+    
+    if (!session) {
+      console.error('[CLIENTS POST] No session - unauthorized');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
     const { name, email, phone, company, notes } = body;
+    console.log('[CLIENTS POST] Request body:', { name, email, phone, company, notes });
 
     // Validation
     if (!name || name.trim().length === 0) {
@@ -88,7 +91,7 @@ export async function POST(request: NextRequest) {
     if (email) {
       const existingClient = await prisma.client.findFirst({
         where: {
-          userId: user.id,
+          userId: session.userId,
           email: email,
         },
       });
@@ -101,6 +104,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('[CLIENTS POST] Creating client with userId:', session.userId);
+    
+    // Проверяем, существует ли пользователь в БД
+    const userExists = await prisma.user.findUnique({
+      where: { id: session.userId },
+    });
+    console.log('[CLIENTS POST] User exists in DB:', !!userExists);
+    
+    if (!userExists) {
+      console.error('[CLIENTS POST] User not found in database:', session.userId);
+      return NextResponse.json({ error: 'User not found' }, { status: 400 });
+    }
+
     const client = await prisma.client.create({
       data: {
         name: name.trim(),
@@ -108,7 +124,7 @@ export async function POST(request: NextRequest) {
         phone: phone?.trim() || null,
         company: company?.trim() || null,
         notes: notes?.trim() || null,
-        userId: user.id,
+        userId: session.userId,
       },
       include: {
         projects: {
@@ -128,9 +144,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log('[CLIENTS POST] Client created successfully:', client.id);
     return NextResponse.json({ client }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating client:', error);
+  } catch (error: any) {
+    console.error('[CLIENTS POST] Error creating client:', error);
+    console.error('[CLIENTS POST] Error details:', {
+      message: error?.message,
+      code: error?.code,
+      meta: error?.meta,
+    });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
